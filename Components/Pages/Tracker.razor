@@ -1,0 +1,165 @@
+@page "/tracker"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using EventTrackerApp.Data
+@inject AppDbContext Db
+
+<PageTitle>Live Event Tracker</PageTitle>
+
+<div class="container my-4">
+    <h2>⚡ Live Event Tracker</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">1. Create Event Type</div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input @bind="newEventName" class="form-control" placeholder="e.g., Server Reboot, Sale Made" />
+                        <button @onclick="CreateEventType" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Add
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-dark text-white">2. Trigger Event</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Details:</label>
+                        <input @bind="instanceDetails" class="form-control"
+                               placeholder="e.g., Error code 502 / $45.00" />
+                    </div>
+
+                    @if (!availableEvents.Any())
+                    {
+                        <p class="text-muted">Create an event type above to start tracking.</p>
+                    }
+                    else
+                    {
+                        <div class="d-grid gap-2">
+                            @foreach (var ev in availableEvents)
+                            {
+                                <button @onclick="() => LogInstance(ev)" class="btn btn-outline-primary text-start">
+                                    Log: <strong>@ev.Name</strong>
+                                    <i class="bi bi-send-fill"></i>
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <h4>Live Feed</h4>
+
+            @if (!recentInstances.Any())
+            {
+                <div class="list-group shadow-sm">
+                    <div class="list-group-item text-muted">No events logged yet.</div>
+                </div>
+            }
+            else
+            {
+                @foreach (var group in recentInstances.GroupBy(ei => ei.Event))
+                {
+                    <div class="list-group shadow-sm mb-4">
+                        <div class="list-group-item active d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">@group.Key?.Name</div>
+                            </div>
+                        </div>
+                        @foreach (var log in group)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-4 me-auto">
+                                    <span>@log?.Details</span>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill align-middle">
+                                    <i class="bi bi-clock"></i>
+                                    @log?.Timestamp.ToLocalTime().ToString("h:mm:ss tt")
+                                </span>
+                                <button class="btn btn-sm btn-outline-secondary align-middle ms-2"
+                                        @onclick="() => DeleteInstance(log)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string newEventName = string.Empty;
+    private string instanceDetails = string.Empty;
+
+    private List<Event> availableEvents = new();
+    private List<EventInstance> recentInstances = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        availableEvents = await Db.Events.ToListAsync();
+        recentInstances = await Db.EventInstances
+            .Include(ei => ei.Event)
+            .OrderByDescending(ei => ei.Timestamp)
+            .Take(20)
+            .ToListAsync();
+    }
+
+    private async Task CreateEventType()
+    {
+        if (string.IsNullOrWhiteSpace(newEventName))
+        {
+            return;
+        }
+
+        var newEv = new Event(newEventName);
+        Db.Events.Add(newEv);
+        await Db.SaveChangesAsync();
+
+        newEventName = string.Empty;
+        await LoadData();
+    }
+
+    private async Task LogInstance(Event selectedEvent)
+    {
+        if (selectedEvent == null)
+        {
+            return;
+        }
+
+        var instance = new EventInstance(
+            selectedEvent,
+            string.IsNullOrWhiteSpace(instanceDetails) ? "<No details>" : instanceDetails
+        );
+
+        Db.EventInstances.Add(instance);
+        await Db.SaveChangesAsync();
+
+        instanceDetails = string.Empty;
+        await LoadData();
+    }
+
+    private async Task DeleteInstance(EventInstance instance)
+    {
+        if (instance == null)
+        {
+            return;
+        }
+
+        Db.EventInstances.Remove(instance);
+        await Db.SaveChangesAsync();
+        await LoadData();
+    }
+}
