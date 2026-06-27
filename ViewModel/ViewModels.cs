@@ -25,6 +25,7 @@ public class EventValueViewModel
     public string Name { get; set; } = string.Empty;
     public string ForegroundColor { get; set; } = string.Empty;
     public string BackgroundColor { get; set; } = string.Empty;
+    public List<EventInstanceViewModel> Instances { get; set; } = new();
 
     public string Style =>
         StyleBuilder
