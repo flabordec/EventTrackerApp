@@ -1,5 +1,6 @@
 using EventTrackerApp.Components;
 using EventTrackerApp.Data;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=events.db"));
 
 var app = builder.Build();
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
 // Create the database if it does not exist
 using (var scope = app.Services.CreateScope())
 {

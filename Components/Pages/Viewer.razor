@@ -3,3 +3,96 @@
 
 <PageTitle>Event Viewer</PageTitle>
 
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0 fw-bold">@currentMonth.ToString("MMMM yyyy")</h3>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" @onclick="PreviousMonth">
+                <i class="bi bi-chevron-left"></i> Prev
+            </button>
+            <button class="btn btn-outline-secondary" @onclick="GoToToday">Today</button>
+            <button class="btn btn-outline-secondary" @onclick="NextMonth">
+                Next <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    @if (instancesByDate is null)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Loading events...</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0" style="table-layout: fixed; min-width: 700px;">
+                <thead class="table-light text-center small text-uppercase">
+                    <tr>
+                        <th style="width: 14.28%;">Sun</th>
+                        <th style="width: 14.28%;">Mon</th>
+                        <th style="width: 14.28%;">Tue</th>
+                        <th style="width: 14.28%;">Wed</th>
+                        <th style="width: 14.28%;">Thu</th>
+                        <th style="width: 14.28%;">Fri</th>
+                        <th style="width: 14.28%;">Sat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int daysInMonth = DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
+                        int startDayOfWeek = (int)currentMonth.DayOfWeek; // 0 = Sunday
+                        int totalCells = startDayOfWeek + daysInMonth;
+                        int totalRows = (int)Math.Ceiling(totalCells / 7.0);
+                        int currentDay = 1;
+                    }
+
+                    @for (int row = 0; row < totalRows; row++)
+                    {
+                        <tr style="height: 130px;">
+                            @for (int col = 0; col < 7; col++)
+                            {
+                                int cellIndex = (row * 7) + col;
+
+                                if (cellIndex < startDayOfWeek || currentDay > daysInMonth)
+                                {
+                                    <td class="bg-light bg-opacity-25"></td>
+                                }
+                                else
+                                {
+                                    var date = new DateOnly(currentMonth.Year, currentMonth.Month, currentDay);
+                                    bool isToday = date == DateOnly.FromDateTime(DateTime.Today);
+
+                                    <td class="align-top p-2 @(isToday ? "table-primary bg-opacity-10" : "")">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold small @(isToday ? "badge bg-primary" : "text-muted")">
+                                                @currentDay
+                                            </span>
+                                        </div>
+
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @if (instancesByDate.TryGetValue(date, out var dayInstances))
+                                            {
+                                                @foreach (var item in dayInstances)
+                                                {
+                                                    <span class="p-2 fs-5 rounded-3 d-inline-flex align-items-center justify-content-center shadow-sm"
+                                                          style="@item.Style"
+                                                          title="@item.EventName: @item.Details (@item.Timestamp.ToString("t"))">
+                                                        <i class="bi @(item.Icon)"></i>
+                                                    </span>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+
+                                    currentDay++;
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

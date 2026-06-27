@@ -44,7 +44,8 @@ public class EventValue
             Index = Index,
             Name = Name,
             ForegroundColor = ForegroundColor,
-            BackgroundColor = BackgroundColor
+            BackgroundColor = BackgroundColor,
+            Instances = Instances.Select(i => i.ToViewModel()).ToList()
         };
     }
 }
