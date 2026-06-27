@@ -5,41 +5,30 @@ namespace EventTrackerApp.Data;
 public class Event
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public string? Id { get; init; }
+    public required string Name { get; init; }
+
+    public ICollection<EventValue> Values { get; set; } = new List<EventValue>();
+}
+
+public class EventValue
+{
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public string? Id { get; set; }
-    public string Name { get; set; }
+    public required string Name { get; init; }
 
-    public Event()
-        : this(string.Empty)
-    {
 
-    }
-
-    public Event(string name)
-    {
-        Name = name;
-    }
+    public required string EventId { get; init; }
+    public Event? Event { get; init; }
 }
 
 public class EventInstance
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public string? Id { get; set; }
-    public DateTime Timestamp { get; set; }
-    public string Details { get; set; }
+    public string? Id { get; init; }
+    public required DateTime Timestamp { get; init; }
+    public required string Details { get; init; }
 
-    public string EventId { get; set; }
-    public Event? Event { get; set; }
-
-    public EventInstance()
-        : this(null, string.Empty)
-    {
-    }
-
-    public EventInstance(Event? eventObj, string details)
-    {
-        Timestamp = DateTime.UtcNow;
-        Event = eventObj;
-        Details = details;
-        EventId = eventObj?.Id ?? string.Empty;
-    }
+    public required string EventValueId { get; init; }
+    public EventValue? EventValue { get; init; }
 }

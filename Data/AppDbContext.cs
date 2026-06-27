@@ -16,12 +16,20 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
         });
 
+        modelBuilder.Entity<EventValue>(entity =>
+        {
+            entity.HasKey(ev => ev.Id);
+            entity.HasOne(ev => ev.Event)
+                  .WithMany(e => e.Values)
+                  .HasForeignKey("EventId");
+        });
+
         modelBuilder.Entity<EventInstance>(entity =>
         {
             entity.HasKey(ei => ei.Id);
-            entity.HasOne(ei => ei.Event)
+            entity.HasOne(ei => ei.EventValue)
                   .WithMany()
-                  .HasForeignKey("EventId");
+                  .HasForeignKey("EventValueId");
         });
     }
 }
