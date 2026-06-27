@@ -1,8 +1,5 @@
 @page "/tracker"
 @rendermode InteractiveServer
-@using EventTrackerApp.Data
-@using Microsoft.EntityFrameworkCore
-@inject AppDbContext DbContext
 
 <PageTitle>Event Tracker</PageTitle>
 
@@ -14,275 +11,166 @@
                     <h5 class="mb-0">1. Define New Event</h5>
                 </div>
                 <div class="card-body">
-                    <EditForm Model="@newEventModel" OnValidSubmit="SaveNewEvent">
+                    <EditForm Model="@newEventModel" OnValidSubmit="SaveNewEvent" FormName="NewEventForm">
                         <DataAnnotationsValidator />
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label fw-bold">Event Name</label>
-                            <InputText @bind-Value="newEventModel.Name" class="form-control"
-                                       placeholder="e.g., Daily Workout" />
+                            <InputText @bind-Value="newEventModel.Name" class="form-control" placeholder="e.g., Pain" />
                             <ValidationMessage For="@(() => newEventModel.Name)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="eventImageInputText" class="form-label">Image</label>
+                            <InputText id="eventImageInputText" @bind-Value="newEventModel.Image" class="form-control"
+                                       placeholder="e.g., bi-exclamation-triangle" />
                         </div>
 
                         <label class="form-label fw-bold">Allowed Values</label>
-                        <div class="input-group mb-2">
-                            <InputText @bind-Value="tempValueName" class="form-control"
-                                       placeholder="e.g., Cardio, Weights, Rest" />
-                            <button type="button" class="btn btn-outline-secondary" @onclick="AddValueToList">Add
-                                Value</button>
-                            </div>
-
-                            <ul class="list-group mb-3">
-                                @if (!newEventModel.Values.Any())
-                                {
-                                    <li class="list-group-item text-muted small">No values added yet. Add at least one.</li>
-                                }
-                                @foreach (var val in newEventModel.Values)
-                                {
-                                    <li class="list-group-item d-flex justify-content-between align-items-center py-1">
-                                        <span>@val</span>
-                                        <button type="button" class="btn btn-sm btn-danger"
-                                                @onclick="() => RemoveValueFromList(val)">&times;</button>
-                                    </li>
-                                }
-                            </ul>
-
-                            <button type="submit" class="btn btn-success w-100" disabled="@(!CanSaveEvent)">
-                                Save Event to Database
+                        <div class="mb-2">
+                            <label for="eventValueNameInputText" class="form-label">Name</label>
+                            <InputText id="eventValueNameInputText" @bind-Value="newEventValueModel.Name"
+                                       class="form-control" placeholder="e.g., Mild, Severe" />
+                        </div>
+                        <div class="mb-2">
+                            <label for="eventValueForegroundColorSelect" class="form-label">Foreground Color</label>
+                            <InputText id="eventValueForegroundColorSelect"
+                                       @bind-Value="newEventValueModel.ForegroundColor" class="form-control"
+                                       placeholder="Any CSS color, e.g., #000000 or red" />
+                        </div>
+                        <div class="mb-2">
+                            <label for="eventValueBackgroundColorSelect" class="form-label">Background Color</label>
+                            <InputText id="eventValueBackgroundColorSelect"
+                                       @bind-Value="newEventValueModel.BackgroundColor" class="form-control"
+                                       placeholder="Any CSS color, e.g., #000000 or red" />
+                        </div>
+                        <div class="mb-2">
+                            <div class="mb-2">Preview</div>
+                            <span class="p-2 fs-5 rounded-3"
+                                  style="@newEventValueModel.Style">
+                                <i class="bi @(newEventModel.Image) mr-4"></i>
+                                @newEventValueModel.Name
+                            </span>
+                        </div>
+                        <div class=" input-group mb-2">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="AddValueToList">
+                                Add Value
                             </button>
-                        </EditForm>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-7">
-                <div class="card shadow-sm mb-4">
-                    <div class="col-md-7">
-                        @if (!string.IsNullOrEmpty(feedbackMessage))
-                        {
-                            <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
-                                 role="alert">
-                                <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
-                                <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
-                            </div>
-                        }
-                        <div class="card shadow-sm mb-4">
-                            <div class="card-header bg-dark text-white">
-                                <h5 class="mb-0">2. Select an Event Value to Log</h5>
-                            </div>
-                            <div class="card-body">
-                                @if (eventsList is null)
-                                {
-                                    <p>Loading events...</p>
-                                }
-                                @if (eventsList is not null && !eventsList.Any())
-                                {
-                                    <p class="text-muted">No events found in database. Create one on the left!</p>
-                                }
-                                else if (eventsList is not null)
-                                {
-                                    <div class="accordion" id="eventsAccordion">
-                                        @foreach (var evt in eventsList)
-                                        {
-                                            bool isExpanded = expandedEventId == evt.Id;
-
-                                            <div class="accordion-item">
-                                                <h2 class="accordion-header">
-                                                    <button class="accordion-button @(isExpanded ? "" : "collapsed") fw-bold"
-                                                            type="button" @onclick="() => ToggleAccordion(evt.Id)">
-                                                        @evt.Name
-                                                    </button>
-                                                </h2>
-                                                <div class="accordion-collapse collapse @(isExpanded ? "show" : "")">
-                                                    <div class="accordion-body">
-                                                        <p class="small text-muted mb-2">Click a value below to log a new instance:
-                                                        </p>
-                                                        <div class="list-group shadow-sm mb-4">
-
-                                                            @foreach (var val in evt.Values.OrderBy(v => v.Name))
-                                                            {
-                                                                <button type="button" class="list-group-item list-group-item-action"
-                                                                        @onclick="() => SelectValueForLogging(evt.Name, val)">
-                                                                    @val.Name
-                                                                </button>
-                                                            }
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        }
-                                    </div>
-                                }
-                            </div>
                         </div>
 
-                        @if (selectedEventValue is not null)
-                        {
-                            <div class="card border-success shadow">
-                                <div
-                                    class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0">Log Instance: <strong>@selectedEventParentName &rarr;
-                                        @selectedEventValue.Name</strong></h6>
-                                        <button class="btn btn-sm btn-close btn-close-white"
-                                                @onclick="() => selectedEventValue = null"></button>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label class="form-label">Timestamp</label>
-                                            <input type="datetime-local" @bind="instanceTimestamp" class="form-control" />
+                        <ul class="list-group mb-3">
+                            @if (!newEventModel.Values.Any())
+                            {
+                                <li class="list-group-item text-muted small">No values added yet. Add at least one.</li>
+                            }
+                            @foreach (var val in newEventModel.Values)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+                                    <span class="p-2 fs-5 rounded-3"
+                                          style="@val.Style">
+                                        <i class="bi @(newEventModel.Image) mr-4"></i>
+                                        @val.Name
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                            @onclick="() => RemoveValueFromList(val)">&times;</button>
+                                </li>
+                            }
+                        </ul>
+
+                        <button type="submit" class="btn btn-success w-100" disabled="@(!CanSaveEvent)">
+                            Save Event to Database
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">2. Select an Event Value to Log</h5>
+                </div>
+                <div class="card-body">
+                    @if (eventsList is null)
+                    {
+                        <p>Loading events...</p>
+                    }
+                    @if (eventsList is not null && !eventsList.Any())
+                    {
+                        <p class="text-muted">No events found in database. Create one on the left!</p>
+                    }
+                    else if (eventsList is not null)
+                    {
+                        <div class="accordion" id="eventsAccordion">
+                            @foreach (var evt in eventsList)
+                            {
+                                bool isExpanded = expandedEventName == evt.Name;
+
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button @(isExpanded ? "" : "collapsed") fw-bold" type="button"
+                                                @onclick="() => ToggleAccordion(evt.Name)">
+                                            @evt.Name
+                                        </button>
+                                    </h2>
+                                    <div class="accordion-collapse collapse @(isExpanded ? "show" : "")">
+                                        <div class="accordion-body">
+                                            <p class="small text-muted mb-2">Click a value below to log a new instance:
+                                            </p>
+                                            <div class="list-group shadow-sm mb-4">
+                                                @foreach (var val in evt.Values.OrderBy(v => v.Index))
+                                                {
+                                                    <button 
+                                                            type="button" 
+                                                            class="list-group-item list-group-item-action" 
+                                                            style="@val.Style"
+                                                            @onclick="() => SelectValueForLogging(evt.Name, val)">
+                                                        <i class="bi @(evt.Image) mr-4"></i>
+                                                        @val.Index - @val.Name
+                                                    </button>
+                                                }
+                                            </div>
                                         </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Details / Notes</label>
-                                            <InputTextArea @bind-Value="instanceDetails" class="form-control" rows="2"
-                                                           placeholder="Enter details..." />
-                                        </div>
-                                        <button class="btn btn-success" @onclick="SaveInstance">Submit Log</button>
                                     </div>
                                 </div>
                             }
                         </div>
+                    }
+                </div>
+            </div>
+
+            @if (selectedEventValue is not null)
+            {
+                <div class="card border-success shadow">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Log Instance:
+                            <strong>@selectedEventParentName &rarr; @selectedEventValue.Name</strong>
+                        </h6>
+                        <button class="btn btn-sm btn-close btn-close-white"
+                                @onclick="() => selectedEventValue = null"></button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Timestamp</label>
+                            <input type="datetime-local" @bind="instanceTimestamp" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Details / Notes</label>
+                            <InputTextArea @bind-Value="instanceDetails" class="form-control" rows="2"
+                                           placeholder="Enter details..." />
+                        </div>
+                        <button class="btn btn-success" @onclick="SaveInstance">Submit Log</button>
                     </div>
                 </div>
+            }
 
-@code {
-    // State Collection
-    private List<Event>? eventsList;
-
-    // ViewModels for Form Binding
-    private NewEventViewModel newEventModel = new();
-    private string tempValueName = string.Empty;
-
-    // Selection State for logging instances
-    private EventValue? selectedEventValue;
-    private string selectedEventParentName = string.Empty;
-    private DateTime instanceTimestamp = DateTime.Now;
-    private string instanceDetails = string.Empty;
-
-    private string? feedbackMessage;
-    private bool isError;
-
-    private bool CanSaveEvent => !string.IsNullOrWhiteSpace(newEventModel.Name) && newEventModel.Values.Any();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadEvents();
-    }
-
-    private async Task LoadEvents()
-    {
-        // Include Values so we can render the child buttons
-        eventsList = await DbContext.Events
-            .Include(e => e.Values)
-            .AsNoTracking()
-            .ToListAsync();
-    }
-
-    private void AddValueToList()
-    {
-        if (!string.IsNullOrWhiteSpace(tempValueName) && !newEventModel.Values.Contains(tempValueName.Trim()))
-        {
-            newEventModel.Values.Add(tempValueName.Trim());
-            tempValueName = string.Empty;
-        }
-    }
-
-    private string? expandedEventId = null;
-
-    private void ToggleAccordion(string? eventId)
-    {
-        if (expandedEventId == eventId)
-            expandedEventId = null;
-        else
-            expandedEventId = eventId;
-    }
-
-    private void RemoveValueFromList(string val)
-    {
-        newEventModel.Values.Remove(val);
-    }
-
-    private async Task SaveNewEvent()
-    {
-        if (!CanSaveEvent) return;
-
-        // Map ViewModel to strict domain entities
-        var newEvent = new Event
-        {
-            Name = newEventModel.Name.Trim(),
-            Values = newEventModel.Values.Select(vName => new EventValue
+            @if (!string.IsNullOrEmpty(feedbackMessage))
             {
-                Name = vName,
-                EventId = "" // EF Core will automatically patch this FK upon saving the parent graph
-            }).ToList()
-        };
-
-        DbContext.Events.Add(newEvent);
-        await DbContext.SaveChangesAsync();
-
-        // Reset form & refresh UI
-        newEventModel = new();
-        await LoadEvents();
-    }
-
-    private void ClearFeedback()
-    {
-        feedbackMessage = null;
-        isError = false;
-    }
-
-    private void SelectValueForLogging(string parentName, EventValue ev)
-    {
-        ClearFeedback(); // Clear old feedback when starting a new log
-        selectedEventParentName = parentName;
-        selectedEventValue = ev;
-        instanceTimestamp = DateTime.Now;
-        instanceDetails = string.Empty;
-    }
-
-    private async Task SaveInstance()
-    {
-        ClearFeedback();
-
-        if (selectedEventValue?.Id is null || string.IsNullOrWhiteSpace(instanceDetails))
-        {
-            isError = true;
-            feedbackMessage = "Please provide details before submitting the log.";
-            return;
-        }
-
-        try
-        {
-            var instance = new EventInstance
-            {
-                Timestamp = instanceTimestamp,
-                Details = instanceDetails.Trim(),
-                EventValueId = selectedEventValue.Id
-            };
-
-            DbContext.Set<EventInstance>().Add(instance);
-            await DbContext.SaveChangesAsync();
-
-            // Set Success State
-            isError = false;
-            feedbackMessage = $"Logged '{selectedEventValue.Name}' for {selectedEventParentName} successfully.";
-
-            // Close the logging panel
-            selectedEventValue = null;
-        }
-        catch (Exception ex)
-        {
-            // Set Error State
-            isError = true;
-            // In production, log the full exception (ex) to a logging provider like Serilog or App Insights
-            feedbackMessage = $"Failed to save the instance to the database: {ex.Message}";
-        }
-    }
-
-    // Mutable DTO wrapper strictly for Blazor UI binding
-    private class NewEventViewModel
-    {
-        [System.ComponentModel.DataAnnotations.Required]
-        public string Name { get; set; } = string.Empty;
-        public List<string> Values { get; set; } = new();
-    }
-}
+                <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
+                     role="alert">
+                    <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
+                    <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
+                </div>
+            }
+        </div>
+    </div>
+</div>

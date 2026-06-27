@@ -7,6 +7,7 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Event> Events => Set<Event>();
+    public DbSet<EventValue> EventValues => Set<EventValue>();
     public DbSet<EventInstance> EventInstances => Set<EventInstance>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
