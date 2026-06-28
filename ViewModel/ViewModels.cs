@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using BlazorComponentUtilities;
 
 namespace EventTrackerApp.ViewModel;
 
+[DebuggerDisplay("Name: {Name}")]
 public class EventViewModel
 {
     public string? Id { get; set; }
@@ -16,6 +18,7 @@ public class EventViewModel
     public List<EventValueViewModel> Values { get; set; } = new();
 }
 
+[DebuggerDisplay("Name: {Name}")]
 public class EventValueViewModel
 {
     public string? Id { get; set; }
@@ -41,6 +44,7 @@ public class EventValueViewModel
     }
 }
 
+[DebuggerDisplay("Timestamp: {Timestamp}")]
 public class EventInstanceViewModel
 {
     public string? Id { get; set; }

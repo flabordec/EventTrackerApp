@@ -16,4 +16,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="publish\**" />
+  </ItemGroup>
+
 </Project>

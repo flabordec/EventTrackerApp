@@ -26,29 +26,26 @@ public partial class Viewer
             .Include(e => e.Values)
             .ThenInclude(ev => ev.Instances);
 
-        var filteredEvents =
-            from evt in events
+        var eventsList = await (
+            from evt in events.AsNoTracking()
             from val in evt.Values
             from inst in val.Instances
             where inst.Timestamp.Year == currentMonth.Year
                && inst.Timestamp.Month == currentMonth.Month
-            select evt;
-
-        var eventsList =
-            await filteredEvents
-            .AsNoTracking()
-            .Select(e => e.ToViewModel())
-            .ToListAsync();
+            select new { evt, val, inst }
+            ).ToListAsync();
 
         var query =
-            from evt in eventsList
-            from val in evt.Values
-            from inst in val.Instances
+            from evtGroup in eventsList
+            let evt = evtGroup.evt.ToViewModel()
+            let val = evtGroup.val.ToViewModel()
+            let inst = evtGroup.inst.ToViewModel()
             orderby inst.Timestamp
             group new CalendarInstance(
                 inst.Timestamp,
                 inst.Details,
                 evt.Name,
+                val.Name,
                 evt.Image,
                 val.Style)
             by DateOnly.FromDateTime(inst.Timestamp.Date) into g
@@ -83,11 +80,17 @@ public partial class Viewer
         }
     }
 
+    public record CalendarInstanceKey(
+        string EventName,
+        string EventValueName,
+        DateTime Timestamp);
+
     // Lightweight record to pass flattened data to the Razor view
     public record CalendarInstance(
         DateTime Timestamp,
         string Details,
         string EventName,
+        string ValueName,
         string Icon,
         string Style
     );
