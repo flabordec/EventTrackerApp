@@ -82,6 +82,15 @@
                     </EditForm>
                 </div>
             </div>
+
+            @if (!string.IsNullOrEmpty(feedbackMessage))
+            {
+                <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
+                     role="alert">
+                    <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
+                    <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
+                </div>
+            }
         </div>
     </div>
 </div>

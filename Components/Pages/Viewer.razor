@@ -57,16 +57,22 @@
                         </span>
                     </div>
 
-                    <div class="d-flex flex-wrap gap-1 mt-auto">
+                    <div class="d-flex flex-column gap-1 mt-auto">
                         @if (instancesByDate.TryGetValue(date, out var dayInstances))
                         {
-                            @foreach (var item in dayInstances)
+                            @foreach (var eventGroup in dayInstances.GroupBy(i => i.EventName))
                             {
-                                <button class="p-2 fs-5 rounded-3 d-inline-flex align-items-center justify-content-center shadow-sm"
-                                      style="@item.Style"
-                                      title="@item.EventName: @item.Details (@item.Timestamp.ToString("t"))">
-                                    <i class="bi @(item.Icon)"></i>
-                                </button>
+                                <div class="d-flex flex-wrap align-items-center gap-1">
+                                    <span>@eventGroup.Key</span>
+                                    @foreach (var item in eventGroup)
+                                    {
+                                        <span class="p-2 fs-5 rounded-3 d-inline-flex align-items-center justify-content-center shadow-sm"
+                                            style="@item.Style"
+                                            title="@item.EventName: @item.Details (@item.Timestamp.ToString("t"))">
+                                            <i class="bi @(item.Icon)"></i>
+                                        </span>
+                                    }
+                                </div>
                             }
                         }
                     </div>
