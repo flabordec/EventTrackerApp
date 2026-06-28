@@ -1,0 +1,72 @@
+@page "/log"
+@rendermode InteractiveServer
+
+<PageTitle>Event Logger</PageTitle>
+
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Select an Event Value to Log</h5>
+                </div>
+                <div class="card-body">
+                    @if (eventsList is null)
+                    {
+                        <p>Loading events...</p>
+                    }
+                    @if (eventsList is not null && !eventsList.Any())
+                    {
+                        <p class="text-muted">No events found in database. Create one on the left!</p>
+                    }
+                    else if (eventsList is not null)
+                    {
+                        <div class="accordion" id="eventsAccordion">
+                            @foreach (var evt in eventsList)
+                            {
+                                bool isExpanded = expandedEventName == evt.Name;
+
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button @(isExpanded ? "" : "collapsed") fw-bold" type="button"
+                                                @onclick="() => ToggleAccordion(evt.Name)">
+                                            @evt.Name
+                                        </button>
+                                    </h2>
+                                    <div class="accordion-collapse collapse @(isExpanded ? "show" : "")">
+                                        <div class="accordion-body">
+                                            <p class="small text-muted mb-2">Click a value below to log a new instance:
+                                            </p>
+                                            <div class="list-group mb-4">
+                                                @foreach (var val in evt.Values.OrderBy(v => v.Index))
+                                                {
+                                                    <button 
+                                                            type="button" 
+                                                            class="list-group-item list-group-item-action pt-4 pb-4 mb-2 rounded-3 shadow" 
+                                                            style="@val.Style"
+                                                            @onclick="() => SaveInstance(evt.Name, val)">
+                                                        <i class="bi @(evt.Image) mr-4"></i>
+                                                        <span class="fw-bolder">@val.Index</span> - @val.Name
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(feedbackMessage))
+            {
+                <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
+                     role="alert">
+                    <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
+                    <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
+                </div>
+            }
+        </div>
+    </div>
+</div>

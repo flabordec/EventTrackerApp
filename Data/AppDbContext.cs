@@ -12,6 +12,8 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasDefaultSchema("event_data");
+
         modelBuilder.Entity<Event>(entity =>
         {
             entity.HasKey(e => e.Id);

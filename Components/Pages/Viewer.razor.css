@@ -1,0 +1,38 @@
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 1px;
+    background-color: var(--bs-border-color);
+    /* The 1px gap acts as the table border */
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.calendar-cell {
+    min-height: 130px;
+}
+
+/* Mobile Breakpoint (Bootstrap 'md' is 768px) */
+@media (max-width: 767.98px) {
+    .calendar-grid {
+        grid-template-columns: 1fr;
+        /* Stacks vertically */
+        gap: 0.5rem;
+        background-color: transparent;
+        border: none;
+    }
+
+    .calendar-header,
+    .calendar-spacer {
+        display: none;
+        /* Don't show empty grey boxes on phone screens */
+    }
+
+    .calendar-cell {
+        min-height: auto;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 0.75rem !important;
+    }
+}

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Components.Pages;
 
-public partial class Tracker
+public partial class EventCreator
 {
     [Inject]
     private AppDbContext DbContext { get; set; } = default!;

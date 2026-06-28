@@ -40,15 +40,16 @@ public partial class Viewer
             let evt = evtGroup.evt.ToViewModel()
             let val = evtGroup.val.ToViewModel()
             let inst = evtGroup.inst.ToViewModel()
-            orderby inst.Timestamp
+            let localTimestamp = inst.Timestamp.ToLocalTime()
+            orderby localTimestamp
             group new CalendarInstance(
-                inst.Timestamp,
+                localTimestamp,
                 inst.Details,
                 evt.Name,
                 val.Name,
                 evt.Image,
                 val.Style)
-            by DateOnly.FromDateTime(inst.Timestamp.Date) into g
+            by DateOnly.FromDateTime(localTimestamp.Date) into g
             select g;
 
         instancesByDate = new();

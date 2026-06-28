@@ -54,7 +54,7 @@ public class EventInstance
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public string? Id { get; init; }
-    public required DateTime Timestamp { get; init; }
+    public required DateTime Timestamp { get; set; }
     public required string Details { get; init; }
 
     public required string EventValueId { get; init; }

@@ -1,0 +1,87 @@
+@page "/create"
+@rendermode InteractiveServer
+
+<PageTitle>Event Tracker</PageTitle>
+
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Define New Event</h5>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@newEventModel" OnValidSubmit="SaveNewEvent" FormName="NewEventForm">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">Event Name</label>
+                            <InputText @bind-Value="newEventModel.Name" class="form-control" placeholder="e.g., Pain" />
+                            <ValidationMessage For="@(() => newEventModel.Name)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="eventImageInputText" class="form-label">Image</label>
+                            <InputText id="eventImageInputText" @bind-Value="newEventModel.Image" class="form-control"
+                                       placeholder="e.g., bi-exclamation-triangle" />
+                        </div>
+
+                        <label class="form-label fw-bold">Allowed Values</label>
+                        <div class="mb-2">
+                            <label for="eventValueNameInputText" class="form-label">Name</label>
+                            <InputText id="eventValueNameInputText" @bind-Value="newEventValueModel.Name"
+                                       class="form-control" placeholder="e.g., Mild, Severe" />
+                        </div>
+                        <div class="mb-2">
+                            <label for="eventValueForegroundColorSelect" class="form-label">Foreground Color</label>
+                            <InputText id="eventValueForegroundColorSelect"
+                                       @bind-Value="newEventValueModel.ForegroundColor" class="form-control"
+                                       placeholder="Any CSS color, e.g., #000000 or red" />
+                        </div>
+                        <div class="mb-2">
+                            <label for="eventValueBackgroundColorSelect" class="form-label">Background Color</label>
+                            <InputText id="eventValueBackgroundColorSelect"
+                                       @bind-Value="newEventValueModel.BackgroundColor" class="form-control"
+                                       placeholder="Any CSS color, e.g., #000000 or red" />
+                        </div>
+                        <div class="mb-2">
+                            <div class="mb-2">Preview</div>
+                            <span class="p-2 fs-5 rounded-3"
+                                  style="@newEventValueModel.Style">
+                                <i class="bi @(newEventModel.Image) mr-4"></i>
+                                @newEventValueModel.Name
+                            </span>
+                        </div>
+                        <div class=" input-group mb-2">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="AddValueToList">
+                                Add Value
+                            </button>
+                        </div>
+
+                        <ul class="list-group mb-3">
+                            @if (!newEventModel.Values.Any())
+                            {
+                                <li class="list-group-item text-muted small">No values added yet. Add at least one.</li>
+                            }
+                            @foreach (var val in newEventModel.Values)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+                                    <span class="p-2 fs-5 rounded-3"
+                                          style="@val.Style">
+                                        <i class="bi @(newEventModel.Image) mr-4"></i>
+                                        @val.Name
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                            @onclick="() => RemoveValueFromList(val)">&times;</button>
+                                </li>
+                            }
+                        </ul>
+
+                        <button type="submit" class="btn btn-success w-100" disabled="@(!CanSaveEvent)">
+                            Save Event to Database
+                        </button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
