@@ -27,7 +27,7 @@
     else
     {
         int daysInMonth = DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
-        int startDayOfWeek = (int)currentMonth.DayOfWeek; // 0 = Sunday
+        int startDayOfWeek = (int)currentMonth.DayOfWeek;
         int totalCells = startDayOfWeek + daysInMonth;
         int trailingSpacers = (7 - (totalCells % 7)) % 7;
 
@@ -48,13 +48,21 @@
             {
                 var date = new DateOnly(currentMonth.Year, currentMonth.Month, day);
                 bool isToday = date == DateOnly.FromDateTime(DateTime.Today);
+                bool isSelected = date == selectedDate;
 
-                <div class="calendar-cell p-2 d-flex flex-column @(isToday ? "bg-primary bg-opacity-10" : "bg-body")">
+                <div class="calendar-cell p-2 d-flex flex-column @(isSelected ? "border border-2 border-primary" : (isToday ? "bg-primary bg-opacity-10" : "bg-body"))">
+                    
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold small @(isToday ? "badge bg-primary" : "text-muted")">
                             <span class="d-none d-md-inline">@day</span>
                             <span class="d-md-none">@date.ToString("ddd, MMM d")</span>
                         </span>
+
+                        <button class="btn btn-sm p-2 @(isSelected ? "btn-primary" : "btn-outline-secondary border-0")" 
+                                @onclick="() => ToggleTimeline(date)" 
+                                title="View Day Timeline">
+                            <i class="bi bi-clock-history"></i> Details
+                        </button>
                     </div>
 
                     <div class="d-flex flex-column gap-1 mt-auto">
@@ -84,5 +92,52 @@
                 <div class="calendar-spacer bg-light bg-opacity-25"></div>
             }
         </div>
+
+        @if (selectedDate.HasValue)
+        {
+            <div class="card mt-4 shadow-sm border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-calendar-event me-2"></i>Timeline for @selectedDate.Value.ToString("dddd, MMMM d, yyyy")
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white small" @onclick="() => selectedDate = null"></button>
+                </div>
+                <div class="card-body p-0">
+                    @if (instancesByDate.TryGetValue(selectedDate.Value, out var selectedInstances) && selectedInstances.Any())
+                    {
+                        var instancesByHour = GroupInstancesByHour(selectedInstances);
+
+                        <div class="list-group list-group-flush">
+                            @for (int i = 0; i < 24; i++){
+                                var hour = new TimeOnly(i, 0);
+
+                                <div class="list-group-item d-flex align-items-center p-3">
+                                    <div class="fw-bold text-secondary text-end me-4" style="min-width: 85px;">
+                                        @hour.ToString("h tt")
+                                    </div>
+                                    
+                                    @if (instancesByHour!.ContainsKey(hour))
+                                    {
+                                        @foreach (var item in instancesByHour![hour])
+                                        {
+                                            <span class="p-2 fs-5 rounded-3 d-inline-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                                                style="@item.Style">
+                                                <i class="bi @(item.Icon)"></i>
+                                            </span>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center text-muted">
+                            <em>No events recorded for this date.</em>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     }
 </div>

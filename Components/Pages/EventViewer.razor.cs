@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using EventTrackerApp.Data;
 using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
@@ -5,14 +6,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Components.Pages;
 
-public partial class Viewer
+public partial class EventViewer
 {
+    [Inject]
+    [NotNull]
+    private ILogger<EventViewer>? Logger { get; set; }
     [Inject]
     private AppDbContext DbContext { get; set; } = default!;
 
     // Calendar State
     private DateTime currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private Dictionary<DateOnly, List<CalendarInstance>>? instancesByDate;
+
+    private DateOnly? selectedDate;
+
+    private void ToggleTimeline(DateOnly clickedDate)
+    {
+        if (selectedDate == clickedDate)
+            selectedDate = null; // Clicking the same clock twice closes the tray
+        else
+            selectedDate = clickedDate;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -57,6 +71,22 @@ public partial class Viewer
         {
             instancesByDate[group.Key] = group.ToList();
         }
+    }
+
+    private Dictionary<TimeOnly, List<CalendarInstance>>? GroupInstancesByHour(List<CalendarInstance> instances)
+    {
+        if (instances == null)
+            return null;
+
+        var instancesByHour = (
+            from instance in instances
+            group instance by new TimeOnly(instance.Timestamp.Hour, 0) into g
+            select g
+            ).ToDictionary(
+                g => g.Key,
+                g => g.ToList()
+            );
+        return instancesByHour;
     }
 
     private async Task PreviousMonth()

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using EventTrackerApp.Data;
 using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
@@ -8,6 +9,9 @@ namespace EventTrackerApp.Components.Pages;
 
 public partial class EventLogger
 {
+    [Inject]
+    [NotNull]
+    private ILogger<EventViewer>? Logger { get; set; }
     [Inject]
     private AppDbContext DbContext { get; set; } = default!;
 
@@ -20,7 +24,7 @@ public partial class EventLogger
     // Selection State for logging instances
     private EventValueViewModel? selectedEventValue;
     private string selectedEventParentName = string.Empty;
-    private DateTime instanceTimestamp = DateTime.Now;
+    private DateTime instanceTimestamp = DateTime.UtcNow;
     private string instanceDetails = string.Empty;
 
     private string? feedbackMessage;
@@ -117,7 +121,7 @@ public partial class EventLogger
         {
             selectedEventParentName = parentName;
             selectedEventValue = ev;
-            instanceTimestamp = DateTime.Now;
+            instanceTimestamp = DateTime.UtcNow;
 
             if (selectedEventValue?.Id is null)
             {
@@ -145,7 +149,8 @@ public partial class EventLogger
         catch (Exception ex)
         {
             isError = true;
-            feedbackMessage = $"Failed to save the instance to the database: {ex.Message}";
+            feedbackMessage = "Failed to save the instance to the database";
+            Logger.LogError(ex, "Failed to save the instance to the database");
         }
     }
 }

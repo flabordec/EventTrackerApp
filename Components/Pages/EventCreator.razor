@@ -6,6 +6,15 @@
 <div class="container my-4">
     <div class="row">
         <div class="col-md-12">
+            @if (!string.IsNullOrEmpty(feedbackMessage))
+            {
+                <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
+                     role="alert">
+                    <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
+                    <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
+                </div>
+            }
+
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">Define New Event</h5>
@@ -82,15 +91,6 @@
                     </EditForm>
                 </div>
             </div>
-
-            @if (!string.IsNullOrEmpty(feedbackMessage))
-            {
-                <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
-                     role="alert">
-                    <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
-                    <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
-                </div>
-            }
         </div>
     </div>
 </div>

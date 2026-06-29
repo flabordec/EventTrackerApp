@@ -17,12 +17,6 @@ public partial class EventCreator
     private EventViewModel newEventModel = new();
     private EventValueViewModel newEventValueModel = new();
 
-    // Selection State for logging instances
-    private EventValueViewModel? selectedEventValue;
-    private string selectedEventParentName = string.Empty;
-    private DateTime instanceTimestamp = DateTime.Now;
-    private string instanceDetails = string.Empty;
-
     private string? feedbackMessage;
     private bool isError;
 
@@ -109,48 +103,4 @@ public partial class EventCreator
         isError = false;
     }
 
-    private void SelectValueForLogging(string parentName, EventValueViewModel ev)
-    {
-        ClearFeedback(); // Clear old feedback when starting a new log
-        selectedEventParentName = parentName;
-        selectedEventValue = ev;
-        instanceTimestamp = DateTime.Now;
-        instanceDetails = string.Empty;
-    }
-
-    private async Task SaveInstance()
-    {
-        ClearFeedback();
-
-        try
-        {
-            if (selectedEventValue?.Id is null)
-            {
-                throw new ArgumentException("The selected event value is invalid.");
-            }
-
-            instanceDetails = instanceDetails?.Trim() ?? string.Empty;
-            var instance = new EventInstance
-            {
-                Timestamp = instanceTimestamp,
-                Details = instanceDetails.Trim(),
-                EventValueId = selectedEventValue.Id
-            };
-
-            DbContext.Set<EventInstance>().Add(instance);
-            await DbContext.SaveChangesAsync();
-
-            // Set Success State
-            isError = false;
-            feedbackMessage = $"Logged '{selectedEventValue.Name}' for {selectedEventParentName} successfully.";
-
-            // Close the logging panel
-            selectedEventValue = null;
-        }
-        catch (Exception ex)
-        {
-            isError = true;
-            feedbackMessage = $"Failed to save the instance to the database: {ex.Message}";
-        }
-    }
 }
