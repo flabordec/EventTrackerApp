@@ -30,8 +30,6 @@ public partial class EventLogger
     private string? feedbackMessage;
     private bool isError;
 
-    private bool CanSaveEvent => !string.IsNullOrWhiteSpace(newEventModel.Name) && newEventModel.Values.Any();
-
     protected override async Task OnInitializedAsync()
     {
         await LoadEvents();
@@ -47,22 +45,6 @@ public partial class EventLogger
             .ToListAsync();
     }
 
-    private void AddValueToList()
-    {
-        ClearFeedback();
-        if (newEventValueModel.IsValid())
-        {
-            newEventValueModel.Index = newEventModel.Values.Count;
-            newEventModel.Values.Add(newEventValueModel);
-            newEventValueModel = new();
-        }
-        else
-        {
-            isError = true;
-            feedbackMessage = $"Please fill in all required fields for the event value, name: {newEventValueModel.Name}.";
-        }
-    }
-
     private string? expandedEventName = null;
 
     private void ToggleAccordion(string? eventName)
@@ -71,40 +53,6 @@ public partial class EventLogger
             expandedEventName = null;
         else
             expandedEventName = eventName;
-    }
-
-    private void RemoveValueFromList(EventValueViewModel val)
-    {
-        newEventModel.Values.Remove(val);
-    }
-
-    private async Task SaveNewEvent()
-    {
-        if (!CanSaveEvent)
-            return;
-
-        // Map ViewModel to strict domain entities
-        int index = 0;
-        var newEvent = new Event
-        {
-            Name = newEventModel.Name.Trim(),
-            Image = newEventModel.Image.Trim(),
-            Values = newEventModel.Values.Select(value => new EventValue
-            {
-                Index = ++index,
-                Name = value.Name.Trim(),
-                ForegroundColor = value.ForegroundColor,
-                BackgroundColor = value.BackgroundColor,
-                EventId = "" // EF Core will automatically patch this FK upon saving the parent graph
-            }).ToList()
-        };
-
-        DbContext.Events.Add(newEvent);
-        await DbContext.SaveChangesAsync();
-
-        // Reset form & refresh UI
-        newEventModel = new();
-        await LoadEvents();
     }
 
     private void ClearFeedback()

@@ -1,6 +1,9 @@
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using EventTrackerApp.Data;
 using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -10,6 +13,12 @@ public partial class EventCreator
 {
     [Inject]
     private AppDbContext DbContext { get; set; } = default!;
+
+    [Inject]
+    [NotNull]
+    private AuthenticationStateProvider? AuthStateProvider { get; set; }
+    private string? _userId;
+
 
     private List<EventViewModel>? eventsList;
 
@@ -24,7 +33,15 @@ public partial class EventCreator
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadEvents();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            // Extract the unique User ID from claims
+            _userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            await LoadEvents();
+        }
     }
 
     private async Task LoadEvents()
@@ -32,6 +49,7 @@ public partial class EventCreator
         // Include Values so we can render the child buttons
         eventsList = await DbContext.Events
             .Include(e => e.Values)
+            .Where(e => e.UserId == _userId)
             .AsNoTracking()
             .Select(e => e.ToViewModel())
             .ToListAsync();
@@ -53,16 +71,6 @@ public partial class EventCreator
         }
     }
 
-    private string? expandedEventName = null;
-
-    private void ToggleAccordion(string? eventName)
-    {
-        if (expandedEventName == eventName)
-            expandedEventName = null;
-        else
-            expandedEventName = eventName;
-    }
-
     private void RemoveValueFromList(EventValueViewModel val)
     {
         newEventModel.Values.Remove(val);
@@ -72,6 +80,8 @@ public partial class EventCreator
     {
         if (!CanSaveEvent)
             return;
+
+        Debug.Assert(_userId is not null, "User ID should not be null when saving a new event.");
 
         // Map ViewModel to strict domain entities
         int index = 0;
@@ -86,7 +96,8 @@ public partial class EventCreator
                 ForegroundColor = value.ForegroundColor,
                 BackgroundColor = value.BackgroundColor,
                 EventId = "" // EF Core will automatically patch this FK upon saving the parent graph
-            }).ToList()
+            }).ToList(),
+            UserId = _userId
         };
 
         DbContext.Events.Add(newEvent);
@@ -102,5 +113,4 @@ public partial class EventCreator
         feedbackMessage = null;
         isError = false;
     }
-
 }

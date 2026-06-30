@@ -1,0 +1,43 @@
+@page "/Account/Login"
+
+<PageTitle>Log in</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <section class="card shadow-sm p-4">
+            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+                <DataAnnotationsValidator />
+                
+                <h2 class="text-center mb-4">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Log in
+                </h2>
+                <hr />
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">@ErrorMessage</div>
+                }
+
+                <div class="form-floating mb-3">
+                    <InputText id="email" @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                    <label for="email" class="form-label">Email</label>
+                    <ValidationMessage For="() => Input.Email" class="text-danger" />
+                </div>
+
+                <div class="form-floating mb-3">
+                    <InputText id="password" type="password" @bind-Value="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
+                    <label for="password" class="form-label">Password</label>
+                    <ValidationMessage For="() => Input.Password" class="text-danger" />
+                </div>
+
+                <div class="mt-4 mb-3">
+                    <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+                </div>
+                
+                <div class="text-center">
+                    <a href="/Account/Register">Register as a new user</a>
+                </div>
+            </EditForm>
+        </section>
+    </div>
+</div>

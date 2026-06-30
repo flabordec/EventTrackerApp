@@ -1,8 +1,9 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -14,9 +15,20 @@ public class AppDbContext : DbContext
     {
         modelBuilder.HasDefaultSchema("event_data");
 
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.HasKey(u => u.Id);
+            entity.HasMany(u => u.Events)
+                  .WithOne()
+                  .HasForeignKey(nameof(Event.UserId));
+        });
+
         modelBuilder.Entity<Event>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.User)
+                  .WithMany(u => u.Events)
+                  .HasForeignKey(nameof(Event.UserId));
         });
 
         modelBuilder.Entity<EventValue>(entity =>
@@ -34,5 +46,7 @@ public class AppDbContext : DbContext
                   .WithMany(ev => ev.Instances)
                   .HasForeignKey(nameof(EventInstance.EventValueId));
         });
+
+        base.OnModelCreating(modelBuilder);
     }
 }

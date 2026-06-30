@@ -4,6 +4,13 @@ using EventTrackerApp.ViewModel;
 
 namespace EventTrackerApp.Data;
 
+using Microsoft.AspNetCore.Identity;
+
+public class ApplicationUser : IdentityUser
+{
+    public ICollection<Event> Events { get; set; } = new List<Event>();
+}
+
 public class Event
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -11,8 +18,10 @@ public class Event
     public required string Name { get; init; }
     public required string Image { get; init; }
 
-    public ICollection<EventValue> Values { get; set; } = new List<EventValue>();
+    public ApplicationUser? User { get; init; }
+    public required string UserId { get; init; }
 
+    public ICollection<EventValue> Values { get; set; } = new List<EventValue>();
     internal EventViewModel ToViewModel() => new()
     {
         Id = Id,

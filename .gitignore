@@ -204,3 +204,6 @@ Thumbs.db
 
 # Database file
 events.db
+
+# App logs
+app-log-*.txt
