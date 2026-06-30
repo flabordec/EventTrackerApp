@@ -13,14 +13,15 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-#if false
-// Register SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=events.db"));
-#else
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-#endif
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        npgsqlOptions =>
+        {
+            // Force the migrations history table into the event_data schema
+            npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "event_data");
+        }
+    ));
 
 var app = builder.Build();
 app.UseForwardedHeaders(new ForwardedHeadersOptions
