@@ -207,3 +207,6 @@ events.db
 
 # App logs
 app-log-*.txt
+
+# Deployment script
+deploy.bat
