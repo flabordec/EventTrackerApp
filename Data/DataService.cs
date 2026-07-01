@@ -62,14 +62,20 @@ public class DefaultDataService : IDataService
             .ThenInclude(ev => ev.Instances)
             .Where(e => e.UserId == userId);
 
+        var startOfMonthLocal = new DateTime(currentMonth.Year, currentMonth.Month, 1, 0, 0, 0, DateTimeKind.Local);
+        var startOfNextMonthLocal = startOfMonthLocal.AddMonths(1);
+
+        var startOfMonthUtc = startOfMonthLocal.ToUniversalTime();
+        var endOfMonthUtc = startOfNextMonthLocal.ToUniversalTime();
+
+
         var eventsList = await (
             from evt in events
             from val in evt.Values
             from inst in val.Instances
-            where inst.Timestamp.ToLocalTime().Year == currentMonth.Year
-               && inst.Timestamp.ToLocalTime().Month == currentMonth.Month
+            where inst.Timestamp >= startOfMonthUtc && inst.Timestamp < endOfMonthUtc
             select new { evt, val, inst }
-            ).ToListAsync();
+        ).ToListAsync();
 
         var query =
             from evtGroup in eventsList
