@@ -13,7 +13,7 @@ public partial class EventViewer
     [NotNull]
     private ILogger<EventViewer>? Logger { get; set; }
     [Inject]
-    private AppDbContext DbContext { get; set; } = default!;
+    private IDataService _dataService { get; set; } = default!;
 
     // Calendar State
     private DateTime currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -43,50 +43,9 @@ public partial class EventViewer
         {
             // Extract the unique User ID from claims
             _userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            await GroupInstancesForMonthAsync();
+            instancesByDate = await _dataService.GroupInstancesForMonthAsync(_userId, currentMonth);
         }
     }
-
-    private async Task GroupInstancesForMonthAsync()
-    {
-        instancesByDate = null;
-        var events = DbContext.Events
-            .Include(e => e.Values)
-            .ThenInclude(ev => ev.Instances);
-
-        var eventsList = await (
-            from evt in events.AsNoTracking()
-            from val in evt.Values
-            from inst in val.Instances
-            where inst.Timestamp.Year == currentMonth.Year
-               && inst.Timestamp.Month == currentMonth.Month
-            select new { evt, val, inst }
-            ).ToListAsync();
-
-        var query =
-            from evtGroup in eventsList
-            let evt = evtGroup.evt.ToViewModel()
-            let val = evtGroup.val.ToViewModel()
-            let inst = evtGroup.inst.ToViewModel()
-            let localTimestamp = inst.Timestamp.ToLocalTime()
-            orderby localTimestamp
-            group new CalendarInstance(
-                localTimestamp,
-                inst.Details,
-                evt.Name,
-                val.Name,
-                evt.Image,
-                val.Style)
-            by DateOnly.FromDateTime(localTimestamp.Date) into g
-            select g;
-
-        instancesByDate = new();
-        foreach (var group in query)
-        {
-            instancesByDate[group.Key] = group.ToList();
-        }
-    }
-
     private Dictionary<TimeOnly, List<CalendarInstance>>? GroupInstancesByHour(List<CalendarInstance> instances)
     {
         if (instances == null)
@@ -106,13 +65,13 @@ public partial class EventViewer
     private async Task PreviousMonth()
     {
         currentMonth = currentMonth.AddMonths(-1);
-        await GroupInstancesForMonthAsync();
+        instancesByDate = await _dataService.GroupInstancesForMonthAsync(_userId, currentMonth);
     }
 
     private async Task NextMonth()
     {
         currentMonth = currentMonth.AddMonths(1);
-        await GroupInstancesForMonthAsync();
+        instancesByDate = await _dataService.GroupInstancesForMonthAsync(_userId, currentMonth);
     }
 
     private async Task GoToToday()
@@ -121,22 +80,7 @@ public partial class EventViewer
         if (currentMonth != wantedMonth)
         {
             currentMonth = wantedMonth;
-            await GroupInstancesForMonthAsync();
+            instancesByDate = await _dataService.GroupInstancesForMonthAsync(_userId, currentMonth);
         }
     }
-
-    public record CalendarInstanceKey(
-        string EventName,
-        string EventValueName,
-        DateTime Timestamp);
-
-    // Lightweight record to pass flattened data to the Razor view
-    public record CalendarInstance(
-        DateTime Timestamp,
-        string Details,
-        string EventName,
-        string ValueName,
-        string Icon,
-        string Style
-    );
 }

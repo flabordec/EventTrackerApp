@@ -4,7 +4,6 @@ using EventTrackerApp.Data;
 using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.EntityFrameworkCore;
 
 
 namespace EventTrackerApp.Components.Pages;
@@ -12,7 +11,7 @@ namespace EventTrackerApp.Components.Pages;
 public partial class EventCreator
 {
     [Inject]
-    private AppDbContext DbContext { get; set; } = default!;
+    private IDataService _dataService { get; set; } = default!;
 
     [Inject]
     [NotNull]
@@ -46,13 +45,7 @@ public partial class EventCreator
 
     private async Task LoadEvents()
     {
-        // Include Values so we can render the child buttons
-        eventsList = await DbContext.Events
-            .Include(e => e.Values)
-            .Where(e => e.UserId == _userId)
-            .AsNoTracking()
-            .Select(e => e.ToViewModel())
-            .ToListAsync();
+        eventsList = await _dataService.GetEvents(_userId);
     }
 
     private void AddValueToList()
@@ -100,8 +93,7 @@ public partial class EventCreator
             UserId = _userId
         };
 
-        DbContext.Events.Add(newEvent);
-        await DbContext.SaveChangesAsync();
+        await _dataService.AddEvent(newEvent);
 
         // Reset form & refresh UI
         newEventModel = new();

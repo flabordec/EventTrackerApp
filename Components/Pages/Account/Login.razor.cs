@@ -22,6 +22,7 @@ public partial class Login
 
 
     [SupplyParameterFromForm]
+    [NotNull]
     public InputModel? Input { get; set; }
 
     [CascadingParameter]

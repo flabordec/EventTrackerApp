@@ -3,6 +3,7 @@ using EventTrackerApp.Data;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,10 +39,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         }
     ));
 
+builder.Services.AddScoped<IDataService, DefaultDataService>();
+
 var app = builder.Build();
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+// Catch the POST request from the logout form
+app.MapPost("/Account/Logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/Account/Login");
 });
 
 app.UseSerilogRequestLogging();

@@ -4,6 +4,7 @@ using EventTrackerApp.ViewModel;
 
 namespace EventTrackerApp.Data;
 
+using System.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 
 public class ApplicationUser : IdentityUser
@@ -11,6 +12,7 @@ public class ApplicationUser : IdentityUser
     public ICollection<Event> Events { get; set; } = new List<Event>();
 }
 
+[DebuggerDisplay("Event: {Name}")]
 public class Event
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -31,6 +33,7 @@ public class Event
     };
 }
 
+[DebuggerDisplay("EventValue: {Name}")]
 public class EventValue
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -59,6 +62,7 @@ public class EventValue
     }
 }
 
+[DebuggerDisplay("EventInstance: {Timestamp}")]
 public class EventInstance
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -79,3 +83,17 @@ public class EventInstance
         };
     }
 }
+
+public record CalendarInstanceKey(
+    string EventName,
+    string EventValueName,
+    DateTime Timestamp);
+
+public record CalendarInstance(
+    DateTime Timestamp,
+    string Details,
+    string EventName,
+    string ValueName,
+    string Icon,
+    string Style
+);

@@ -14,7 +14,7 @@ public partial class EventLogger
     [NotNull]
     private ILogger<EventViewer>? Logger { get; set; }
     [Inject]
-    private AppDbContext DbContext { get; set; } = default!;
+    private IDataService _dataService { get; set; } = default!;
 
     private List<EventViewModel>? eventsList;
 
@@ -51,12 +51,7 @@ public partial class EventLogger
 
     private async Task LoadEvents()
     {
-        // Include Values so we can render the child buttons
-        eventsList = await DbContext.Events
-            .Include(e => e.Values)
-            .AsNoTracking()
-            .Select(e => e.ToViewModel())
-            .ToListAsync();
+        eventsList = await _dataService.GetEvents(_userId);
     }
 
     private string? expandedEventName = null;
@@ -98,8 +93,7 @@ public partial class EventLogger
                 EventValueId = selectedEventValue.Id
             };
 
-            DbContext.Set<EventInstance>().Add(instance);
-            await DbContext.SaveChangesAsync();
+            await _dataService.AddInstance(instance);
 
             // Set Success State
             isError = false;
