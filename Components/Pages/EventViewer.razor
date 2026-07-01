@@ -1,6 +1,9 @@
 @page "/viewer"
 @rendermode InteractiveServer
 
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
 <PageTitle>Event Viewer</PageTitle>
 
 <div class="container-fluid py-3">

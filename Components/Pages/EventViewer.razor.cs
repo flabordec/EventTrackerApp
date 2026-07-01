@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using EventTrackerApp.Data;
 using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Components.Pages;
@@ -20,6 +21,11 @@ public partial class EventViewer
 
     private DateOnly? selectedDate;
 
+    [Inject]
+    [NotNull]
+    private AuthenticationStateProvider? AuthStateProvider { get; set; }
+    private string? _userId;
+
     private void ToggleTimeline(DateOnly clickedDate)
     {
         if (selectedDate == clickedDate)
@@ -30,7 +36,15 @@ public partial class EventViewer
 
     protected override async Task OnInitializedAsync()
     {
-        await GroupInstancesForMonthAsync();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            // Extract the unique User ID from claims
+            _userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            await GroupInstancesForMonthAsync();
+        }
     }
 
     private async Task GroupInstancesForMonthAsync()

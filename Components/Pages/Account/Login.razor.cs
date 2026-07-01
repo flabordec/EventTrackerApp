@@ -22,7 +22,7 @@ public partial class Login
 
 
     [SupplyParameterFromForm]
-    public InputModel? Input { get; set; } = new();
+    public InputModel? Input { get; set; }
 
     [CascadingParameter]
     public HttpContext HttpContext { get; set; } = default!;

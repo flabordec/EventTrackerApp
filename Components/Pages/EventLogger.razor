@@ -1,11 +1,23 @@
 @page "/log"
 @rendermode InteractiveServer
 
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
 <PageTitle>Event Logger</PageTitle>
 
 <div class="container my-4">
     <div class="row">
         <div class="col-md-12">
+            @if (!string.IsNullOrEmpty(feedbackMessage))
+            {
+                <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
+                     role="alert">
+                    <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
+                    <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
+                </div>
+            }
+
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">Select an Event Value to Log</h5>
@@ -17,7 +29,7 @@
                     }
                     @if (eventsList is not null && !eventsList.Any())
                     {
-                        <p class="text-muted">No events found in database. Create one on the left!</p>
+                        <p class="text-muted">No events found in database. Create one on the Create New Event Type page!</p>
                     }
                     else if (eventsList is not null)
                     {
@@ -58,15 +70,6 @@
                     }
                 </div>
             </div>
-
-            @if (!string.IsNullOrEmpty(feedbackMessage))
-            {
-                <div class="alert @(isError ? "alert-danger" : "alert-success") alert-dismissible fade show shadow-sm"
-                     role="alert">
-                    <strong>@(isError ? "Error: " : "Success! ")</strong> @feedbackMessage
-                    <button type="button" class="btn-close" @onclick="ClearFeedback"></button>
-                </div>
-            }
         </div>
     </div>
 </div>

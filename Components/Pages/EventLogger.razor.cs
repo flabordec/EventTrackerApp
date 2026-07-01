@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using EventTrackerApp.Data;
 using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -30,9 +31,22 @@ public partial class EventLogger
     private string? feedbackMessage;
     private bool isError;
 
+    [Inject]
+    [NotNull]
+    private AuthenticationStateProvider? AuthStateProvider { get; set; }
+    private string? _userId;
+
     protected override async Task OnInitializedAsync()
     {
-        await LoadEvents();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            // Extract the unique User ID from claims
+            _userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            await LoadEvents();
+        }
     }
 
     private async Task LoadEvents()
