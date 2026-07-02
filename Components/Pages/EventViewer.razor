@@ -36,6 +36,18 @@
         int totalCells = startDayOfWeek + daysInMonth;
         int trailingSpacers = (7 - (totalCells % 7)) % 7;
 
+        @if(localTimeZone is null)
+        {
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Unable to determine your local time zone. Please ensure your browser allows access to time zone information.
+            </div>
+        }
+        else
+        {
+            <p>@(localTimeZone.IsDaylightSavingTime(DateTime.Now) ? localTimeZone.DaylightName : localTimeZone.StandardName)</p>
+        }
+
         <div class="calendar-grid">
             @foreach (var day in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
             {

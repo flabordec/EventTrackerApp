@@ -54,6 +54,12 @@ public class DefaultDataService : IDataService
             .ToListAsync();
     }
 
+    public DateTimeOffset GetDateTimeOffset(DateTime localTime, TimeZoneInfo? localTimeZone)
+    {
+        TimeSpan offset = localTimeZone?.GetUtcOffset(localTime) ?? TimeSpan.Zero;
+        return new DateTimeOffset(localTime, offset);
+    }
+
     public async Task<Dictionary<DateOnly, List<CalendarInstance>>> GroupInstancesForMonthAsync(
         string? userId,
         int year,
@@ -65,13 +71,14 @@ public class DefaultDataService : IDataService
             return new Dictionary<DateOnly, List<CalendarInstance>>();
         }
 
+
         var events = DbContext.Events
             .Include(e => e.Values)
             .ThenInclude(ev => ev.Instances)
             .AsSplitQuery()
             .Where(e => e.UserId == userId);
 
-        var startOfMonthLocal = new DateTimeOffset(year, month, 1, 0, 0, 0, localTimeZone?.BaseUtcOffset ?? TimeSpan.Zero);
+        var startOfMonthLocal = GetDateTimeOffset(new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Unspecified), localTimeZone);
         var startOfNextMonthLocal = startOfMonthLocal.AddMonths(1);
 
         var startOfMonthUtc = startOfMonthLocal.ToUniversalTime();
@@ -90,7 +97,7 @@ public class DefaultDataService : IDataService
             let evt = evtGroup.evt.ToViewModel()
             let val = evtGroup.val.ToViewModel()
             let inst = evtGroup.inst.ToViewModel()
-            let localTimestamp = inst.Timestamp.ToOffset(localTimeZone?.BaseUtcOffset ?? TimeSpan.Zero)
+            let localTimestamp = ToDateTimeOffset(inst.Timestamp, localTimeZone)
             orderby localTimestamp
             group new CalendarInstance(
                 localTimestamp,
@@ -110,4 +117,8 @@ public class DefaultDataService : IDataService
         return instancesByDate;
     }
 
+    private static DateTimeOffset ToDateTimeOffset(DateTimeOffset dateTime, TimeZoneInfo? localTimeZone)
+    {
+        return dateTime.ToOffset(localTimeZone?.GetUtcOffset(dateTime.DateTime) ?? TimeSpan.Zero);
+    }
 }
