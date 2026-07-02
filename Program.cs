@@ -1,5 +1,6 @@
 using EventTrackerApp.Components;
 using EventTrackerApp.Data;
+using EventTrackerApp.Helpers;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -47,6 +48,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     ));
 
 builder.Services.AddScoped<IDataService, DefaultDataService>();
+builder.Services.AddScoped<ITimeZoneProvider, BrowserTimeZoneProvider>();
 
 builder.Services.AddCascadingAuthenticationState();
 

@@ -9,7 +9,11 @@ public interface IDataService
     Task AddEvent(Event newEvent);
     Task AddInstance(EventInstance instance);
     Task<List<EventViewModel>> GetEvents(string? userId);
-    Task<Dictionary<DateOnly, List<CalendarInstance>>> GroupInstancesForMonthAsync(string? userId, DateTime currentMonth);
+    Task<Dictionary<DateOnly, List<CalendarInstance>>> GroupInstancesForMonthAsync(
+        string? userId,
+        int year,
+        int month,
+        TimeZoneInfo? localTimeZone);
 }
 
 public class DefaultDataService : IDataService
@@ -50,7 +54,11 @@ public class DefaultDataService : IDataService
             .ToListAsync();
     }
 
-    public async Task<Dictionary<DateOnly, List<CalendarInstance>>> GroupInstancesForMonthAsync(string? userId, DateTime currentMonth)
+    public async Task<Dictionary<DateOnly, List<CalendarInstance>>> GroupInstancesForMonthAsync(
+        string? userId,
+        int year,
+        int month,
+        TimeZoneInfo? localTimeZone)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -63,7 +71,7 @@ public class DefaultDataService : IDataService
             .AsSplitQuery()
             .Where(e => e.UserId == userId);
 
-        var startOfMonthLocal = new DateTime(currentMonth.Year, currentMonth.Month, 1, 0, 0, 0, DateTimeKind.Local);
+        var startOfMonthLocal = new DateTimeOffset(year, month, 1, 0, 0, 0, localTimeZone?.BaseUtcOffset ?? TimeSpan.Zero);
         var startOfNextMonthLocal = startOfMonthLocal.AddMonths(1);
 
         var startOfMonthUtc = startOfMonthLocal.ToUniversalTime();
@@ -82,7 +90,7 @@ public class DefaultDataService : IDataService
             let evt = evtGroup.evt.ToViewModel()
             let val = evtGroup.val.ToViewModel()
             let inst = evtGroup.inst.ToViewModel()
-            let localTimestamp = inst.Timestamp.ToLocalTime()
+            let localTimestamp = inst.Timestamp.ToOffset(localTimeZone?.BaseUtcOffset ?? TimeSpan.Zero)
             orderby localTimestamp
             group new CalendarInstance(
                 localTimestamp,
