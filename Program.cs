@@ -1,5 +1,6 @@
 using EventTrackerApp.Components;
 using EventTrackerApp.Data;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,17 @@ builder.Services.AddAuthentication(options =>
     options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
 });
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.SlidingExpiration = true;
+    options.Cookie.HttpOnly = true;
+});
+
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AppDbContext>()
+    .SetApplicationName("EventTrackerApp");
+
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
@@ -36,7 +48,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IDataService, DefaultDataService>();
 
+builder.Services.AddCascadingAuthenticationState();
+
+
 var app = builder.Build();
+
 app.UseStaticFiles(); // Enables serving static files from wwwroot
 app.UseStaticFiles(new StaticFileOptions
 {

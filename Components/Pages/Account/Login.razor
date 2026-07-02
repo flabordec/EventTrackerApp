@@ -30,6 +30,11 @@
                     <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
 
+                <div class="form-check mb-3">
+                    <InputCheckbox id="rememberMe" @bind-Value="Input.RememberMe" class="form-check-input" />
+                    <label for="rememberMe" class="form-check-label">Remember me</label>
+                </div>
+
                 <div class="mt-4 mb-3">
                     <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
                 </div>

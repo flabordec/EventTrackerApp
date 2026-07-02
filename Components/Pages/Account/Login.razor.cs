@@ -25,6 +25,9 @@ public partial class Login
     [NotNull]
     public InputModel? Input { get; set; }
 
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
     [CascadingParameter]
     public HttpContext HttpContext { get; set; } = default!;
 
@@ -49,12 +52,17 @@ public partial class Login
             return;
         }
 
-        var result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, isPersistent: false, lockoutOnFailure: false);
+        var result = await SignInManager.PasswordSignInAsync(
+            Input.Email,
+            Input.Password,
+            isPersistent: Input.RememberMe,
+            lockoutOnFailure: false);
 
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
-            NavigationManager.NavigateTo("/", forceLoad: true); // forceLoad is critical here to refresh the auth state across the app
+            // forceLoad is needed here to refresh the auth state across the app
+            NavigationManager.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
         }
         else
         {
@@ -71,5 +79,8 @@ public partial class Login
         [Required]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
+
+        [Required]
+        public bool RememberMe { get; set; } = true;
     }
 }
