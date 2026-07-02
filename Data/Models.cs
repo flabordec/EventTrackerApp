@@ -67,7 +67,7 @@ public class EventInstance
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public string? Id { get; init; }
-    public required DateTime Timestamp { get; set; }
+    public required DateTimeOffset Timestamp { get; set; }
     public required string Details { get; init; }
 
     public required string EventValueId { get; init; }
@@ -87,10 +87,10 @@ public class EventInstance
 public record CalendarInstanceKey(
     string EventName,
     string EventValueName,
-    DateTime Timestamp);
+    DateTimeOffset Timestamp);
 
 public record CalendarInstance(
-    DateTime Timestamp,
+    DateTimeOffset Timestamp,
     string Details,
     string EventName,
     string ValueName,

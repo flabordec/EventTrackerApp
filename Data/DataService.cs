@@ -60,6 +60,7 @@ public class DefaultDataService : IDataService
         var events = DbContext.Events
             .Include(e => e.Values)
             .ThenInclude(ev => ev.Instances)
+            .AsSplitQuery()
             .Where(e => e.UserId == userId);
 
         var startOfMonthLocal = new DateTime(currentMonth.Year, currentMonth.Month, 1, 0, 0, 0, DateTimeKind.Local);
@@ -67,7 +68,6 @@ public class DefaultDataService : IDataService
 
         var startOfMonthUtc = startOfMonthLocal.ToUniversalTime();
         var endOfMonthUtc = startOfNextMonthLocal.ToUniversalTime();
-
 
         var eventsList = await (
             from evt in events

@@ -25,7 +25,7 @@ public partial class EventLogger
     // Selection State for logging instances
     private EventValueViewModel? selectedEventValue;
     private string selectedEventParentName = string.Empty;
-    private DateTime instanceTimestamp = DateTime.UtcNow;
+    private DateTimeOffset instanceTimestamp = DateTimeOffset.UtcNow;
     private string instanceDetails = string.Empty;
 
     private string? feedbackMessage;
@@ -78,7 +78,7 @@ public partial class EventLogger
         {
             selectedEventParentName = parentName;
             selectedEventValue = ev;
-            instanceTimestamp = DateTime.UtcNow;
+            instanceTimestamp = DateTimeOffset.UtcNow;
 
             if (selectedEventValue?.Id is null)
             {

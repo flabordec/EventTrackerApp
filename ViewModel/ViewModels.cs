@@ -49,7 +49,7 @@ public class EventInstanceViewModel
 {
     public string? Id { get; set; }
     [Required]
-    public DateTime Timestamp { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
     [Required]
     public string Details { get; set; } = string.Empty;
 }
