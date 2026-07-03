@@ -44,7 +44,7 @@
             }
             else
             {
-                <select class="form-select form-select-sm w-auto" @bind="selectedTimeZoneId" @bind:event="selectedTimeZoneIdChanged" @bind:after="RefreshInstancesByDate">
+                <select class="form-select form-select-sm" @bind="selectedTimeZoneId" @bind:event="selectedTimeZoneIdChanged" @bind:after="RefreshInstancesByDate">
                 @foreach (var tz in systemTimeZones)
                 {
                     <option value="@tz.Id">@tz.DisplayName</option>
