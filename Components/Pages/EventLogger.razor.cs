@@ -51,7 +51,7 @@ public partial class EventLogger
 
     private async Task LoadEvents()
     {
-        eventsList = await _dataService.GetEvents(_userId);
+        eventsList = await _dataService.GetEventsAsync(_userId);
     }
 
     private string? expandedEventName = null;
@@ -93,7 +93,7 @@ public partial class EventLogger
                 EventValueId = selectedEventValue.Id
             };
 
-            await _dataService.AddInstance(instance);
+            await _dataService.AddInstanceAsync(instance);
 
             // Set Success State
             isError = false;

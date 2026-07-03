@@ -45,7 +45,7 @@ public partial class EventCreator
 
     private async Task LoadEvents()
     {
-        eventsList = await _dataService.GetEvents(_userId);
+        eventsList = await _dataService.GetEventsAsync(_userId);
     }
 
     private void AddValueToList()
@@ -93,7 +93,7 @@ public partial class EventCreator
             UserId = _userId
         };
 
-        await _dataService.AddEvent(newEvent);
+        await _dataService.AddEventAsync(newEvent);
 
         // Reset form & refresh UI
         newEventModel = new();

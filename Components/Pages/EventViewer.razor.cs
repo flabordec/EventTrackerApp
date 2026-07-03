@@ -16,7 +16,10 @@ public partial class EventViewer
 
     // Calendar State
     private DateTime currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
-    private TimeZoneInfo? localTimeZone;
+    private IEnumerable<TimeZoneInfo>? systemTimeZones;
+
+    private EventHandler<EventArgs>? selectedTimeZoneIdChanged;
+    private string? selectedTimeZoneId;
     private Dictionary<DateOnly, List<CalendarInstance>>? instancesByDate;
 
     private DateOnly? selectedDate;
@@ -45,30 +48,83 @@ public partial class EventViewer
 
     protected override async Task OnInitializedAsync()
     {
+        // Load the list of system time zones for the selector
+        try
+        {
+            systemTimeZones = TimeZoneInfo.GetSystemTimeZones();
+        }
+        catch
+        {
+            systemTimeZones = Enumerable.Empty<TimeZoneInfo>();
+        }
+
         TimeZoneProvider.LocalTimeZoneChanged += async (sender, args) =>
         {
             Logger.LogInformation("Local time zone changed to {TimeZone}", TimeZoneProvider.LocalTimeZone?.Id);
             if (TimeZoneProvider.LocalTimeZone is not null)
             {
-                localTimeZone = TimeZoneProvider.LocalTimeZone;
+                var browserTimeZoneId = TimeZoneProvider.LocalTimeZone.Id;
+                await SetTimeZoneId(browserTimeZoneId);
             }
-            await RefreshInstancesByDate();
-            StateHasChanged();
         };
+
+        var initialTimeZoneId = TimeZoneInfo.Utc.Id;
+        await SetTimeZoneId(initialTimeZoneId);
+    }
+
+    private async Task SetTimeZoneId(string? timeZoneId)
+    {
+        if (selectedTimeZoneId != timeZoneId)
+        {
+            if (timeZoneId is null)
+            {
+                Logger.LogWarning("Attempted to set time zone ID to null.");
+                return;
+            }
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            var internalId = systemTimeZones?.FirstOrDefault(tz => tz.StandardName == timeZone.StandardName)?.Id;
+            selectedTimeZoneId = internalId ?? timeZoneId;
+            selectedTimeZoneIdChanged?.Invoke(this, EventArgs.Empty);
+            await RefreshInstancesByDate();
+        }
     }
 
     private async Task RefreshInstancesByDate()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.Identity is { IsAuthenticated: true })
+        try
         {
-            // Extract the unique User ID from claims
-            _userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            using var scope = ServiceScopeFactory.CreateScope();
-            var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
-            instancesByDate = await dataService.GroupInstancesForMonthAsync(_userId, currentMonth.Year, currentMonth.Month, localTimeZone);
+            instancesByDate = new();
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity is { IsAuthenticated: true })
+            {
+                // Extract the unique User ID from claims
+                _userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                using var scope = ServiceScopeFactory.CreateScope();
+                var dataService = scope.ServiceProvider.GetRequiredService<IDataService>();
+
+                var timeZoneId = selectedTimeZoneId ?? TimeZoneProvider.LocalTimeZone?.Id ?? TimeZoneInfo.Utc.Id;
+                var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+                var instancesForMonth = await dataService.GetInstancesForMonthAsync(_userId, currentMonth.Year, currentMonth.Month, localTimeZone);
+
+                var query =
+                    from x in instancesForMonth
+                    group x by DateOnly.FromDateTime(ToDateTimeOffset(x.Timestamp).Date) into g
+                    select g;
+
+                instancesByDate = new Dictionary<DateOnly, List<CalendarInstance>>();
+                foreach (var group in query)
+                {
+                    instancesByDate[group.Key] = group.ToList();
+                }
+
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error refreshing instances by date");
         }
     }
 
@@ -79,7 +135,7 @@ public partial class EventViewer
 
         var instancesByHour = (
             from instance in instances
-            group instance by new TimeOnly(instance.Timestamp.Hour, 0) into g
+            group instance by new TimeOnly(ToDateTimeOffset(instance.Timestamp).Hour, 0) into g
             select g
             ).ToDictionary(
                 g => g.Key,
@@ -108,5 +164,12 @@ public partial class EventViewer
             currentMonth = wantedMonth;
             await RefreshInstancesByDate();
         }
+    }
+
+    private DateTimeOffset ToDateTimeOffset(DateTimeOffset dateTime)
+    {
+        var timeZoneId = selectedTimeZoneId ?? TimeZoneProvider.LocalTimeZone?.Id ?? TimeZoneInfo.Utc.Id;
+        var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        return dateTime.ToOffset(localTimeZone?.GetUtcOffset(dateTime.DateTime) ?? TimeSpan.Zero);
     }
 }

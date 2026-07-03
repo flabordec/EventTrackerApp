@@ -36,17 +36,22 @@
         int totalCells = startDayOfWeek + daysInMonth;
         int trailingSpacers = (7 - (totalCells % 7)) % 7;
 
-        @if(localTimeZone is null)
-        {
-            <div class="alert alert-warning">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                Unable to determine your local time zone. Please ensure your browser allows access to time zone information.
-            </div>
-        }
-        else
-        {
-            <p>@(localTimeZone.IsDaylightSavingTime(DateTime.Now) ? localTimeZone.DaylightName : localTimeZone.StandardName)</p>
-        }
+        <div class="mb-3 d-flex align-items-center gap-2">
+            <label class="me-2 mb-0 small text-muted">Time zone</label>
+            @if (systemTimeZones is null)
+            {
+                <div class="spinner-border spinner-border-sm text-secondary" role="status">Loading time zones...</div>
+            }
+            else
+            {
+                <select class="form-select form-select-sm w-auto" @bind="selectedTimeZoneId" @bind:event="selectedTimeZoneIdChanged" @bind:after="RefreshInstancesByDate">
+                @foreach (var tz in systemTimeZones)
+                {
+                    <option value="@tz.Id">@tz.DisplayName</option>
+                }
+                </select>
+            }
+        </div>
 
         <div class="calendar-grid">
             @foreach (var day in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
@@ -93,8 +98,9 @@
                                     {
                                         <span class="p-2 fs-5 rounded-3 d-inline-flex align-items-center justify-content-center shadow-sm"
                                             style="@item.Style"
-                                            title="@item.EventName: @item.Details (@item.Timestamp.ToString("t"))">
+                                            title="@item.EventName: @item.Details (@ToDateTimeOffset(item.Timestamp).ToString("t"))">
                                             <i class="bi @(item.Icon)"></i>
+                                            @ToDateTimeOffset(item.Timestamp).ToString("h:mm tt z")
                                         </span>
                                     }
                                 </div>

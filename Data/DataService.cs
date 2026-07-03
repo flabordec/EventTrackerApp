@@ -6,10 +6,10 @@ namespace EventTrackerApp.Data;
 
 public interface IDataService
 {
-    Task AddEvent(Event newEvent);
-    Task AddInstance(EventInstance instance);
-    Task<List<EventViewModel>> GetEvents(string? userId);
-    Task<Dictionary<DateOnly, List<CalendarInstance>>> GroupInstancesForMonthAsync(
+    Task AddEventAsync(Event newEvent);
+    Task AddInstanceAsync(EventInstance instance);
+    Task<List<EventViewModel>> GetEventsAsync(string? userId);
+    Task<List<CalendarInstance>> GetInstancesForMonthAsync(
         string? userId,
         int year,
         int month,
@@ -25,21 +25,21 @@ public class DefaultDataService : IDataService
         DbContext = dbContext;
     }
 
-    public async Task AddEvent(Event newEvent)
+    public async Task AddEventAsync(Event newEvent)
     {
 
         DbContext.Events.Add(newEvent);
         await DbContext.SaveChangesAsync();
     }
 
-    public async Task AddInstance(EventInstance instance)
+    public async Task AddInstanceAsync(EventInstance instance)
     {
         DbContext.EventInstances.Add(instance);
         await DbContext.SaveChangesAsync();
 
     }
 
-    public async Task<List<EventViewModel>> GetEvents(string? userId)
+    public async Task<List<EventViewModel>> GetEventsAsync(string? userId)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -54,13 +54,13 @@ public class DefaultDataService : IDataService
             .ToListAsync();
     }
 
-    public DateTimeOffset GetDateTimeOffset(DateTime localTime, TimeZoneInfo? localTimeZone)
+    private DateTimeOffset GetDateTimeOffset(DateTime localTime, TimeZoneInfo? localTimeZone)
     {
         TimeSpan offset = localTimeZone?.GetUtcOffset(localTime) ?? TimeSpan.Zero;
         return new DateTimeOffset(localTime, offset);
     }
 
-    public async Task<Dictionary<DateOnly, List<CalendarInstance>>> GroupInstancesForMonthAsync(
+    public async Task<List<CalendarInstance>> GetInstancesForMonthAsync(
         string? userId,
         int year,
         int month,
@@ -68,7 +68,7 @@ public class DefaultDataService : IDataService
     {
         if (string.IsNullOrEmpty(userId))
         {
-            return new Dictionary<DateOnly, List<CalendarInstance>>();
+            return new();
         }
 
 
@@ -97,28 +97,16 @@ public class DefaultDataService : IDataService
             let evt = evtGroup.evt.ToViewModel()
             let val = evtGroup.val.ToViewModel()
             let inst = evtGroup.inst.ToViewModel()
-            let localTimestamp = ToDateTimeOffset(inst.Timestamp, localTimeZone)
+            let localTimestamp = inst.Timestamp
             orderby localTimestamp
-            group new CalendarInstance(
+            select new CalendarInstance(
                 localTimestamp,
                 inst.Details,
                 evt.Name,
                 val.Name,
                 evt.Image,
-                val.Style)
-            by DateOnly.FromDateTime(localTimestamp.Date) into g
-            select g;
+                val.Style);
 
-        var instancesByDate = new Dictionary<DateOnly, List<CalendarInstance>>();
-        foreach (var group in query)
-        {
-            instancesByDate[group.Key] = group.ToList();
-        }
-        return instancesByDate;
-    }
-
-    private static DateTimeOffset ToDateTimeOffset(DateTimeOffset dateTime, TimeZoneInfo? localTimeZone)
-    {
-        return dateTime.ToOffset(localTimeZone?.GetUtcOffset(dateTime.DateTime) ?? TimeSpan.Zero);
+        return query.ToList();
     }
 }
