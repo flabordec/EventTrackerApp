@@ -69,7 +69,8 @@
             @for (int day = 1; day <= daysInMonth; day++)
             {
                 var date = new DateOnly(currentMonth.Year, currentMonth.Month, day);
-                bool isToday = date == DateOnly.FromDateTime(DateTime.Today);
+                var todayOffset = ToDateTimeOffset(DateTime.Today);
+                bool isToday = date == DateOnly.FromDateTime(todayOffset.DateTime);
                 bool isSelected = date == selectedDate;
 
                 <div class="calendar-cell p-2 d-flex flex-column @(isSelected ? "border border-2 border-primary" : (isToday ? "bg-primary bg-opacity-10" : "bg-body"))">
