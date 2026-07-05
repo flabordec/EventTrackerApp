@@ -44,12 +44,12 @@
             }
             else
             {
-                <select class="form-select form-select-sm" @bind="selectedTimeZoneId" @bind:event="selectedTimeZoneIdChanged" @bind:after="RefreshInstancesByDate">
+                <InputSelect class="form-select form-select-sm" @bind-Value="selectedTimeZoneId" @bind:event="selectedTimeZoneIdChanged" @bind:after="RefreshInstancesByDate">
                 @foreach (var tz in systemTimeZones)
                 {
                     <option value="@tz.Id">@tz.DisplayName</option>
                 }
-                </select>
+                </InputSelect>
             }
         </div>
 
@@ -69,9 +69,12 @@
             @for (int day = 1; day <= daysInMonth; day++)
             {
                 var date = new DateOnly(currentMonth.Year, currentMonth.Month, day);
-                var todayOffset = ToDateTimeOffset(DateTime.Today);
-                bool isToday = date == DateOnly.FromDateTime(todayOffset.DateTime);
                 bool isSelected = date == selectedDate;
+                var todayDateOnly = DateOnly.FromDateTime(ToClientTime(DateTime.Now).Date);
+                Logger.LogInformation("Today date: {TodayDate}", todayDateOnly);
+
+                bool isToday = date == todayDateOnly;
+                Logger.LogInformation("Comparing date {Date} with today {TodayDate}: {IsToday}", date, todayDateOnly, isToday);
 
                 <div class="calendar-cell p-2 d-flex flex-column @(isSelected ? "border border-2 border-primary" : (isToday ? "bg-primary bg-opacity-10" : "bg-body"))">
                     
@@ -99,9 +102,9 @@
                                     {
                                         <span class="p-2 fs-5 rounded-3 d-inline-flex align-items-center justify-content-center shadow-sm"
                                             style="@item.Style"
-                                            title="@item.EventName: @item.Details (@ToDateTimeOffset(item.Timestamp).ToString("t"))">
+                                            title="@item.EventName: @item.Details (@ToClientTime(item.Timestamp).ToString("t"))">
                                             <i class="bi @(item.Icon)"></i>
-                                            @ToDateTimeOffset(item.Timestamp).ToString("h:mm tt z")
+                                            @ToClientTime(item.Timestamp).ToString("h:mm tt z")
                                         </span>
                                     }
                                 </div>

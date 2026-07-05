@@ -85,6 +85,7 @@ public partial class EventViewer
             var internalId = systemTimeZones?.FirstOrDefault(tz => tz.StandardName == timeZone.StandardName)?.Id;
             selectedTimeZoneId = internalId ?? timeZoneId;
             selectedTimeZoneIdChanged?.Invoke(this, EventArgs.Empty);
+
             await RefreshInstancesByDate();
         }
     }
@@ -110,7 +111,7 @@ public partial class EventViewer
 
                 var query =
                     from x in instancesForMonth
-                    group x by DateOnly.FromDateTime(ToDateTimeOffset(x.Timestamp).Date) into g
+                    group x by DateOnly.FromDateTime(ToClientTime(x.Timestamp).Date) into g
                     select g;
 
                 instancesByDate = new Dictionary<DateOnly, List<CalendarInstance>>();
@@ -135,7 +136,7 @@ public partial class EventViewer
 
         var instancesByHour = (
             from instance in instances
-            group instance by new TimeOnly(ToDateTimeOffset(instance.Timestamp).Hour, 0) into g
+            group instance by new TimeOnly(ToClientTime(instance.Timestamp).Hour, 0) into g
             select g
             ).ToDictionary(
                 g => g.Key,
@@ -166,10 +167,10 @@ public partial class EventViewer
         }
     }
 
-    private DateTimeOffset ToDateTimeOffset(DateTimeOffset dateTime)
+    private DateTimeOffset ToClientTime(DateTimeOffset dateTime)
     {
-        var timeZoneId = selectedTimeZoneId ?? TimeZoneProvider.LocalTimeZone?.Id ?? TimeZoneInfo.Utc.Id;
-        var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-        return dateTime.ToOffset(localTimeZone?.GetUtcOffset(dateTime.DateTime) ?? TimeSpan.Zero);
+        var clientTimeZoneId = selectedTimeZoneId ?? TimeZoneProvider.LocalTimeZone?.Id ?? TimeZoneInfo.Utc.Id;
+        var clientTimeZone = TimeZoneInfo.FindSystemTimeZoneById(clientTimeZoneId);
+        return dateTime.ToOffset(clientTimeZone?.GetUtcOffset(dateTime.DateTime) ?? TimeSpan.Zero);
     }
 }
