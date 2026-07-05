@@ -1,3 +1,4 @@
+using ApexCharts;
 using EventTrackerApp.Components;
 using EventTrackerApp.Data;
 using EventTrackerApp.Helpers;
@@ -51,6 +52,8 @@ builder.Services.AddScoped<IDataService, DefaultDataService>();
 builder.Services.AddScoped<ITimeZoneProvider, BrowserTimeZoneProvider>();
 
 builder.Services.AddCascadingAuthenticationState();
+
+builder.Services.AddApexCharts();
 
 
 var app = builder.Build();

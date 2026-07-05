@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
+using ApexCharts;
 using EventTrackerApp.Data;
 using EventTrackerApp.Helpers;
 using EventTrackerApp.ViewModel;
@@ -7,6 +9,10 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Components.Pages;
+
+public record HistogramSeries(string Name, HistogramValues[] Values);
+
+public record HistogramValues(decimal Edge, int Value);
 
 public partial class EventViewer
 {
@@ -21,6 +27,10 @@ public partial class EventViewer
     private EventHandler<EventArgs>? selectedTimeZoneIdChanged;
     private string? selectedTimeZoneId;
     private Dictionary<DateOnly, List<CalendarInstance>>? instancesByDate;
+    private List<HistogramSeries> eventsHistograms = new()
+    {
+        new ("Loading...", [new HistogramValues(0.0m, 0)])
+    };
 
     private DateOnly? selectedDate;
 
@@ -37,6 +47,8 @@ public partial class EventViewer
     private IServiceScopeFactory? ServiceScopeFactory { get; set; }
 
     private string? _userId;
+
+    private ApexChart<HistogramSeries>? eventsChart;
 
     private void ToggleTimeline(DateOnly clickedDate)
     {
@@ -108,16 +120,12 @@ public partial class EventViewer
                 var timeZoneId = selectedTimeZoneId ?? TimeZoneProvider.LocalTimeZone?.Id ?? TimeZoneInfo.Utc.Id;
                 var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
                 var instancesForMonth = await dataService.GetInstancesForMonthAsync(_userId, currentMonth.Year, currentMonth.Month, localTimeZone);
+                instancesByDate = GroupByDate(instancesForMonth);
 
-                var query =
-                    from x in instancesForMonth
-                    group x by DateOnly.FromDateTime(ToClientTime(x.Timestamp).Date) into g
-                    select g;
-
-                instancesByDate = new Dictionary<DateOnly, List<CalendarInstance>>();
-                foreach (var group in query)
+                eventsHistograms = CalculateHistogram(instancesForMonth);
+                if (eventsChart is not null)
                 {
-                    instancesByDate[group.Key] = group.ToList();
+                    await eventsChart.UpdateSeriesAsync(true);
                 }
 
                 StateHasChanged();
@@ -127,6 +135,63 @@ public partial class EventViewer
         {
             Logger.LogError(ex, "Error refreshing instances by date");
         }
+    }
+
+    private decimal TimestampToDecimal(DateTimeOffset timestamp)
+    {
+        decimal v = timestamp.Hour;
+        v += timestamp.Minute / 60.0m;
+        v += timestamp.Second / 60.0m / 60.0m;
+        v += timestamp.Millisecond / 60.0m / 60.0m / 1000.0m;
+        return v;
+    }
+
+    private List<HistogramSeries> CalculateHistogram(List<CalendarInstance> instancesForMonth)
+    {
+        var results = new List<HistogramSeries>();
+        foreach (var g in instancesForMonth.GroupBy(x => x.EventName))
+        {
+            string eventName = g.Key;
+            var timestamps = g.Select(x => TimestampToDecimal(x.Timestamp)).ToArray();
+
+            int numBuckets = 12;
+            decimal min = 0;
+            decimal max = 24;
+
+            decimal bucketSize = (max - min) / numBuckets;
+
+            var buckets = new int[numBuckets];
+            var edges = (
+                from i in Enumerable.Range(0, numBuckets + 1)
+                select min + i * bucketSize
+                ).ToArray();
+
+            foreach (var x in timestamps)
+            {
+                int index = (int)((x - min) / bucketSize);
+                if (index == numBuckets)
+                    index = numBuckets - 1;
+                buckets[index] += 1;
+            }
+            var bucketsObj = buckets.Select((x, i) => new HistogramValues(edges[i + 1], x)).ToArray();
+            results.Add(new HistogramSeries(eventName, bucketsObj));
+        }
+        return results;
+    }
+
+    private Dictionary<DateOnly, List<CalendarInstance>> GroupByDate(List<CalendarInstance> instancesForMonth)
+    {
+        var query =
+            from x in instancesForMonth
+            group x by DateOnly.FromDateTime(ToClientTime(x.Timestamp).Date) into g
+            select g;
+
+        var instancesByDate = new Dictionary<DateOnly, List<CalendarInstance>>();
+        foreach (var group in query)
+        {
+            instancesByDate[group.Key] = group.ToList();
+        }
+        return instancesByDate;
     }
 
     private Dictionary<TimeOnly, List<CalendarInstance>>? GroupInstancesByHour(List<CalendarInstance> instances)
