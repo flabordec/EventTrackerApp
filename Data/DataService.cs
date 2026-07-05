@@ -105,7 +105,8 @@ public class DefaultDataService : IDataService
                 evt.Name,
                 val.Name,
                 evt.Image,
-                val.Style);
+                val.Style,
+                val.BackgroundColor);
 
         return query.ToList();
     }

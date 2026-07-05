@@ -117,20 +117,43 @@
             }
         </div>
 
-        <div class="card mt-4 shadow-sm border-primary">
-            @if (eventsHistograms.Any())
+        <div class="row d-flex mt-4">
+            @if (histogramsByEventName.Any())
             {
-                <ApexChart @ref="eventsChart" TItem="HistogramSeries">
-                    @foreach (var histogram in eventsHistograms)
+                <div class="mb-3 d-flex align-items-center gap-2">
+                    <label class="me-2 mb-0 small text-muted">Time zone</label>
+                    <InputSelect class="form-select form-select-sm" @bind-Value="selectedEventNameForCharts" @bind-Value:after="RefreshCharts">
+                        @foreach (var eventName in histogramsByEventName.Keys)
+                        {
+                            <option value="@eventName">@eventName</option>
+                        }
+                    </InputSelect>
+                </div>
+                <ApexChart @ref="eventsChart" TItem="HistogramValues" Options="eventsChartOptions">
+                    @{
+                        List<HistogramSeries> histogramsForSelectedEvent;
+                        @if (selectedEventNameForCharts is not null) 
+                        {
+                            histogramsForSelectedEvent = histogramsByEventName[selectedEventNameForCharts];
+                        }
+                        else
+                        {
+                            histogramsForSelectedEvent = histogramsByEventName.Values.First();
+                        }
+                    }
+                    
+                    @foreach (var histogram in histogramsForSelectedEvent)
                     {
-                        <ApexPointSeries TItem="HistogramValues"
+                        <ApexPointSeries 
+                            TItem="HistogramValues"
                             Items="histogram.Values"
-                            Name="@histogram.Name"
-                            XValue="@(e => e.Edge.ToString())"
-                            YAggregate="@(e => e.Count())"
+                            Name="@histogram.EventName"
+                            Color="@histogram.SeriesColorHtml"
+                            XValue="@(e => e.TimestampString)"
+                            YValue="@(e => (decimal)e.Value)"
                             SeriesType="SeriesType.Bar" />
                     }
-                </ApexChart>
+                    </ApexChart>
             } else {
                 <div>Loading charts...</div>
             }

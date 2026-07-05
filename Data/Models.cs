@@ -5,6 +5,7 @@ using EventTrackerApp.ViewModel;
 namespace EventTrackerApp.Data;
 
 using System.Diagnostics;
+using System.Drawing;
 using Microsoft.AspNetCore.Identity;
 
 public class ApplicationUser : IdentityUser
@@ -95,5 +96,6 @@ public record CalendarInstance(
     string EventName,
     string ValueName,
     string Icon,
-    string Style
+    string Style,
+    string ColorHtml
 );

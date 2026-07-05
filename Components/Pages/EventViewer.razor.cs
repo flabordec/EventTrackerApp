@@ -10,9 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Components.Pages;
 
-public record HistogramSeries(string Name, HistogramValues[] Values);
+public record HistogramSeries(string EventName, string SeriesColorHtml, HistogramValues[] Values);
 
-public record HistogramValues(decimal Edge, int Value);
+public record HistogramValues(string TimestampString, int Value);
 
 public partial class EventViewer
 {
@@ -24,13 +24,9 @@ public partial class EventViewer
     private DateTime currentMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private IEnumerable<TimeZoneInfo>? systemTimeZones;
 
-    private EventHandler<EventArgs>? selectedTimeZoneIdChanged;
+    public EventHandler<EventArgs>? selectedTimeZoneIdChanged;
     private string? selectedTimeZoneId;
     private Dictionary<DateOnly, List<CalendarInstance>>? instancesByDate;
-    private List<HistogramSeries> eventsHistograms = new()
-    {
-        new ("Loading...", [new HistogramValues(0.0m, 0)])
-    };
 
     private DateOnly? selectedDate;
 
@@ -48,7 +44,11 @@ public partial class EventViewer
 
     private string? _userId;
 
-    private ApexChart<HistogramSeries>? eventsChart;
+    private string? selectedEventNameForCharts;
+    private ApexChart<HistogramValues>? eventsChart;
+    private ApexChartOptions<HistogramValues>? eventsChartOptions;
+    private Dictionary<string, List<HistogramSeries>> histogramsByEventName = new();
+
 
     private void ToggleTimeline(DateOnly clickedDate)
     {
@@ -70,6 +70,18 @@ public partial class EventViewer
             systemTimeZones = Enumerable.Empty<TimeZoneInfo>();
         }
 
+        eventsChartOptions = new ApexChartOptions<HistogramValues>()
+        {
+            Chart = new()
+            {
+                Stacked = true,
+            },
+            Theme = new()
+            {
+                Mode = Mode.Dark
+            }
+        };
+
         TimeZoneProvider.LocalTimeZoneChanged += async (sender, args) =>
         {
             Logger.LogInformation("Local time zone changed to {TimeZone}", TimeZoneProvider.LocalTimeZone?.Id);
@@ -79,9 +91,6 @@ public partial class EventViewer
                 await SetTimeZoneId(browserTimeZoneId);
             }
         };
-
-        var initialTimeZoneId = TimeZoneInfo.Utc.Id;
-        await SetTimeZoneId(initialTimeZoneId);
     }
 
     private async Task SetTimeZoneId(string? timeZoneId)
@@ -122,7 +131,7 @@ public partial class EventViewer
                 var instancesForMonth = await dataService.GetInstancesForMonthAsync(_userId, currentMonth.Year, currentMonth.Month, localTimeZone);
                 instancesByDate = GroupByDate(instancesForMonth);
 
-                eventsHistograms = CalculateHistogram(instancesForMonth);
+                histogramsByEventName = CalculateHistogramsByEventName(instancesForMonth);
                 if (eventsChart is not null)
                 {
                     await eventsChart.UpdateSeriesAsync(true);
@@ -137,6 +146,14 @@ public partial class EventViewer
         }
     }
 
+    private async Task RefreshCharts()
+    {
+        if (eventsChart is not null)
+        {
+            await eventsChart.UpdateSeriesAsync(true);
+        }
+    }
+
     private decimal TimestampToDecimal(DateTimeOffset timestamp)
     {
         decimal v = timestamp.Hour;
@@ -146,35 +163,56 @@ public partial class EventViewer
         return v;
     }
 
-    private List<HistogramSeries> CalculateHistogram(List<CalendarInstance> instancesForMonth)
+    private string DecimalHoursToTimestampString(decimal hoursFractional)
     {
-        var results = new List<HistogramSeries>();
-        foreach (var g in instancesForMonth.GroupBy(x => x.EventName))
+        var timestamp = TimeOnly.FromTimeSpan(TimeSpan.FromHours((double)hoursFractional));
+        return timestamp.ToString("h tt");
+    }
+
+    private Dictionary<string, List<HistogramSeries>> CalculateHistogramsByEventName(
+        List<CalendarInstance> instancesForMonth)
+    {
+        var results = new Dictionary<string, List<HistogramSeries>>();
+
+        var instancesByEventName = instancesForMonth.GroupBy(x => x.EventName);
+        foreach (var instancesForCurrentEvent in instancesByEventName)
         {
-            string eventName = g.Key;
-            var timestamps = g.Select(x => TimestampToDecimal(x.Timestamp)).ToArray();
+            var eventName = instancesForCurrentEvent.Key;
+            var currentHistograms = new List<HistogramSeries>();
 
-            int numBuckets = 12;
-            decimal min = 0;
-            decimal max = 24;
-
-            decimal bucketSize = (max - min) / numBuckets;
-
-            var buckets = new int[numBuckets];
-            var edges = (
-                from i in Enumerable.Range(0, numBuckets + 1)
-                select min + i * bucketSize
-                ).ToArray();
-
-            foreach (var x in timestamps)
+            foreach (var g in instancesForCurrentEvent.GroupBy(x => (x.ValueName, x.ColorHtml)))
             {
-                int index = (int)((x - min) / bucketSize);
-                if (index == numBuckets)
-                    index = numBuckets - 1;
-                buckets[index] += 1;
+
+                (string eventValueName, string colorHtml) = g.Key;
+                var timestamps = g.Select(x => TimestampToDecimal(x.Timestamp)).ToArray();
+
+                int numBuckets = 12;
+                decimal min = 0;
+                decimal max = 24;
+
+                decimal bucketSize = (max - min) / numBuckets;
+
+                var buckets = new int[numBuckets];
+                var edges = (
+                    from i in Enumerable.Range(0, numBuckets + 1)
+                    select min + i * bucketSize
+                    ).ToArray();
+
+                foreach (var x in timestamps)
+                {
+                    int index = (int)((x - min) / bucketSize);
+                    if (index == numBuckets)
+                        index = numBuckets - 1;
+                    buckets[index] += 1;
+                }
+                var bucketsObj = buckets.Select(
+                    (x, i) => new HistogramValues(
+                        DecimalHoursToTimestampString(edges[i]),
+                        x)
+                    ).ToArray();
+                currentHistograms.Add(new HistogramSeries(eventValueName, colorHtml, bucketsObj));
             }
-            var bucketsObj = buckets.Select((x, i) => new HistogramValues(edges[i + 1], x)).ToArray();
-            results.Add(new HistogramSeries(eventName, bucketsObj));
+            results.Add(eventName, currentHistograms);
         }
         return results;
     }
