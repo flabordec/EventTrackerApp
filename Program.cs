@@ -53,8 +53,20 @@ builder.Services.AddScoped<ITimeZoneProvider, BrowserTimeZoneProvider>();
 
 builder.Services.AddCascadingAuthenticationState();
 
-builder.Services.AddApexCharts();
-
+builder.Services.AddApexCharts(e =>
+{
+    e.GlobalOptions = new ApexChartBaseOptions
+    {
+        Chart = new()
+        {
+            Stacked = true
+        },
+        Theme = new()
+        {
+            Mode = Mode.Dark
+        }
+    };
+});
 
 var app = builder.Build();
 

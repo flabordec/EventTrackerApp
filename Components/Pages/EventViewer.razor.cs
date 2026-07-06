@@ -44,9 +44,9 @@ public partial class EventViewer
 
     private string? _userId;
 
-    private string? selectedEventNameForCharts;
-    private ApexChart<HistogramValues>? eventsChart;
-    private ApexChartOptions<HistogramValues>? eventsChartOptions;
+    [Inject]
+    [NotNull]
+    public IApexChartService ApexChartService { get; set; }
     private Dictionary<string, List<HistogramSeries>> histogramsByEventName = new();
 
 
@@ -69,18 +69,6 @@ public partial class EventViewer
         {
             systemTimeZones = Enumerable.Empty<TimeZoneInfo>();
         }
-
-        eventsChartOptions = new ApexChartOptions<HistogramValues>()
-        {
-            Chart = new()
-            {
-                Stacked = true,
-            },
-            Theme = new()
-            {
-                Mode = Mode.Dark
-            }
-        };
 
         TimeZoneProvider.LocalTimeZoneChanged += async (sender, args) =>
         {
@@ -132,10 +120,7 @@ public partial class EventViewer
                 instancesByDate = GroupByDate(instancesForMonth);
 
                 histogramsByEventName = CalculateHistogramsByEventName(instancesForMonth);
-                if (eventsChart is not null)
-                {
-                    await eventsChart.UpdateSeriesAsync(true);
-                }
+                await RefreshCharts();
 
                 StateHasChanged();
             }
@@ -148,9 +133,12 @@ public partial class EventViewer
 
     private async Task RefreshCharts()
     {
-        if (eventsChart is not null)
+        foreach (var eventsChart in ApexChartService.Charts)
         {
-            await eventsChart.UpdateSeriesAsync(true);
+            if (eventsChart is ApexChart<HistogramValues> histogramChart)
+            {
+                await histogramChart.UpdateSeriesAsync(true);
+            }
         }
     }
 

@@ -37,14 +37,14 @@
         int trailingSpacers = (7 - (totalCells % 7)) % 7;
 
         <div class="mb-3 d-flex align-items-center gap-2">
-            <label class="me-2 mb-0 small text-muted">Time zone</label>
+            <label class="me-2 mb-0 text-muted">Time zone</label>
             @if (systemTimeZones is null)
             {
                 <div class="spinner-border spinner-border-sm text-secondary" role="status">Loading time zones...</div>
             }
             else
             {
-                <InputSelect class="form-select form-select-sm" @bind-Value="selectedTimeZoneId" @bind:event="selectedTimeZoneIdChanged" @bind:after="RefreshInstancesByDate">
+                <InputSelect class="form-select" @bind-Value="selectedTimeZoneId" @bind:event="selectedTimeZoneIdChanged" @bind:after="RefreshInstancesByDate">
                 @foreach (var tz in systemTimeZones)
                 {
                     <option value="@tz.Id">@tz.DisplayName</option>
@@ -120,40 +120,26 @@
         <div class="row d-flex mt-4">
             @if (histogramsByEventName.Any())
             {
-                <div class="mb-3 d-flex align-items-center gap-2">
-                    <label class="me-2 mb-0 small text-muted">Time zone</label>
-                    <InputSelect class="form-select form-select-sm" @bind-Value="selectedEventNameForCharts" @bind-Value:after="RefreshCharts">
-                        @foreach (var eventName in histogramsByEventName.Keys)
-                        {
-                            <option value="@eventName">@eventName</option>
-                        }
-                    </InputSelect>
-                </div>
-                <ApexChart @ref="eventsChart" TItem="HistogramValues" Options="eventsChartOptions">
-                    @{
-                        List<HistogramSeries> histogramsForSelectedEvent;
-                        @if (selectedEventNameForCharts is not null) 
-                        {
-                            histogramsForSelectedEvent = histogramsByEventName[selectedEventNameForCharts];
-                        }
-                        else
-                        {
-                            histogramsForSelectedEvent = histogramsByEventName.Values.First();
-                        }
-                    }
-                    
-                    @foreach (var histogram in histogramsForSelectedEvent)
-                    {
-                        <ApexPointSeries 
-                            TItem="HistogramValues"
-                            Items="histogram.Values"
-                            Name="@histogram.EventName"
-                            Color="@histogram.SeriesColorHtml"
-                            XValue="@(e => e.TimestampString)"
-                            YValue="@(e => (decimal)e.Value)"
-                            SeriesType="SeriesType.Bar" />
-                    }
-                    </ApexChart>
+                @foreach (var eventName in histogramsByEventName.Keys)
+                {
+                    var histogramsForSelectedEvent = histogramsByEventName[eventName];
+
+                    <div class="col-12 col-lg-6">
+                        <ApexChart TItem="HistogramValues" Title="@(eventName)">
+                            @foreach (var histogram in histogramsForSelectedEvent)
+                            {
+                                <ApexPointSeries
+                                    TItem="HistogramValues"
+                                    Items="histogram.Values"
+                                    Name="@histogram.EventName"
+                                    Color="@histogram.SeriesColorHtml"
+                                    XValue="@(e => e.TimestampString)"
+                                    YValue="@(e => (decimal)e.Value)"
+                                    SeriesType="SeriesType.Bar" />
+                            }
+                        </ApexChart>
+                    </div>
+                }
             } else {
                 <div>Loading charts...</div>
             }
