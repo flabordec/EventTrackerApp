@@ -144,10 +144,11 @@ public partial class EventViewer
 
     private decimal TimestampToDecimal(DateTimeOffset timestamp)
     {
-        decimal v = timestamp.Hour;
-        v += timestamp.Minute / 60.0m;
-        v += timestamp.Second / 60.0m / 60.0m;
-        v += timestamp.Millisecond / 60.0m / 60.0m / 1000.0m;
+        var clientTimestamp = ToClientTime(timestamp);
+        decimal v = clientTimestamp.Hour;
+        v += clientTimestamp.Minute / 60.0m;
+        v += clientTimestamp.Second / 60.0m / 60.0m;
+        v += clientTimestamp.Millisecond / 60.0m / 60.0m / 1000.0m;
         return v;
     }
 
