@@ -10,7 +10,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Components.Pages;
 
-public record HistogramSeries(string EventName, string SeriesColorHtml, HistogramValues[] Values);
+
+public record EventStats(
+    List<HistogramSeries> HistogramSeries,
+    int TotalDays,
+    double AverageEventsPerDay
+);
+
+public record HistogramSeries(
+    string EventName,
+    string SeriesColorHtml,
+    HistogramValues[] Values);
 
 public record HistogramValues(string TimestampString, int Value);
 
@@ -46,9 +56,10 @@ public partial class EventViewer
 
     [Inject]
     [NotNull]
-    public IApexChartService ApexChartService { get; set; }
-    private Dictionary<string, List<HistogramSeries>> histogramsByEventName = new();
+    public IApexChartService? ApexChartService { get; set; }
+    private Dictionary<string, EventStats> eventStatsByEventName = new();
 
+    private bool showEventDates;
 
     private void ToggleTimeline(DateOnly clickedDate)
     {
@@ -119,7 +130,7 @@ public partial class EventViewer
                 var instancesForMonth = await dataService.GetInstancesForMonthAsync(_userId, currentMonth.Year, currentMonth.Month, localTimeZone);
                 instancesByDate = GroupByDate(instancesForMonth);
 
-                histogramsByEventName = CalculateHistogramsByEventName(instancesForMonth);
+                eventStatsByEventName = CalculateHistogramsByEventName(instancesForMonth);
                 await RefreshCharts();
 
                 StateHasChanged();
@@ -158,10 +169,10 @@ public partial class EventViewer
         return timestamp.ToString("h tt");
     }
 
-    private Dictionary<string, List<HistogramSeries>> CalculateHistogramsByEventName(
+    private Dictionary<string, EventStats> CalculateHistogramsByEventName(
         List<CalendarInstance> instancesForMonth)
     {
-        var results = new Dictionary<string, List<HistogramSeries>>();
+        var results = new Dictionary<string, EventStats>();
 
         var instancesByEventName = instancesForMonth.GroupBy(x => x.EventName);
         foreach (var instancesForCurrentEvent in instancesByEventName)
@@ -169,9 +180,17 @@ public partial class EventViewer
             var eventName = instancesForCurrentEvent.Key;
             var currentHistograms = new List<HistogramSeries>();
 
+            var instancesGroupedByDay = (
+                from x in instancesForCurrentEvent
+                let timestamp = ToClientTime(x.Timestamp)
+                where timestamp.Date != DateTime.Today
+                group x by timestamp.Date
+                );
+            var average = instancesGroupedByDay.Average(x => x.Count());
+            var totalDays = instancesGroupedByDay.Count();
+
             foreach (var g in instancesForCurrentEvent.GroupBy(x => (x.ValueName, x.ColorHtml)))
             {
-
                 (string eventValueName, string colorHtml) = g.Key;
                 var timestamps = g.Select(x => TimestampToDecimal(x.Timestamp)).ToArray();
 
@@ -201,7 +220,7 @@ public partial class EventViewer
                     ).ToArray();
                 currentHistograms.Add(new HistogramSeries(eventValueName, colorHtml, bucketsObj));
             }
-            results.Add(eventName, currentHistograms);
+            results.Add(eventName, new(currentHistograms, totalDays, average));
         }
         return results;
     }
