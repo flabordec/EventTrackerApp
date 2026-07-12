@@ -71,32 +71,25 @@ public class DefaultDataService : IDataService
             return new();
         }
 
-
-        var events = DbContext.Events
-            .Include(e => e.Values)
-            .ThenInclude(ev => ev.Instances)
-            .AsSplitQuery()
-            .Where(e => e.UserId == userId);
-
         var startOfMonthLocal = GetDateTimeOffset(new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Unspecified), localTimeZone);
         var startOfNextMonthLocal = startOfMonthLocal.AddMonths(1);
 
         var startOfMonthUtc = startOfMonthLocal.ToUniversalTime();
         var endOfMonthUtc = startOfNextMonthLocal.ToUniversalTime();
 
-        var eventsList = await (
-            from evt in events
-            from val in evt.Values
-            from inst in val.Instances
-            where inst.Timestamp >= startOfMonthUtc && inst.Timestamp < endOfMonthUtc
-            select new { evt, val, inst }
-        ).ToListAsync();
+        var instancesList = await DbContext.EventInstances
+            .Include(inst => inst.EventValue)
+            .ThenInclude(val => val!.Event)
+            .AsSplitQuery()
+            .Where(inst => inst.EventValue!.Event!.UserId == userId
+                    && inst.Timestamp >= startOfMonthUtc
+                    && inst.Timestamp < endOfMonthUtc)
+            .ToListAsync();
 
         var query =
-            from evtGroup in eventsList
-            let evt = evtGroup.evt.ToViewModel()
-            let val = evtGroup.val.ToViewModel()
-            let inst = evtGroup.inst.ToViewModel()
+            from inst in instancesList
+            let val = inst.EventValue!
+            let evt = val.Event!
             let localTimestamp = inst.Timestamp
             orderby localTimestamp
             select new CalendarInstance(
@@ -105,7 +98,7 @@ public class DefaultDataService : IDataService
                 evt.Name,
                 val.Name,
                 evt.Image,
-                val.Style,
+                val.ToViewModel().Style,
                 val.BackgroundColor);
 
         return query.ToList();

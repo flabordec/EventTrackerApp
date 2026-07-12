@@ -114,7 +114,7 @@ public partial class EventViewer
     {
         try
         {
-            instancesByDate = new();
+            instancesByDate = null;
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
@@ -131,9 +131,9 @@ public partial class EventViewer
                 instancesByDate = GroupByDate(instancesForMonth);
 
                 eventStatsByEventName = CalculateHistogramsByEventName(instancesForMonth);
-                await RefreshCharts();
 
                 StateHasChanged();
+                await RefreshCharts();
             }
         }
         catch (Exception ex)
@@ -148,7 +148,7 @@ public partial class EventViewer
         {
             if (eventsChart is ApexChart<HistogramValues> histogramChart)
             {
-                await histogramChart.UpdateSeriesAsync(true);
+                await histogramChart.UpdateSeriesAsync(false);
             }
         }
     }

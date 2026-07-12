@@ -44,9 +44,13 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     .AddDefaultTokenProviders();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+    options
+    .UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"))
+// .LogTo(
+//     Console.WriteLine,
+//     LogLevel.Information)
+);
 
 builder.Services.AddScoped<IDataService, DefaultDataService>();
 builder.Services.AddScoped<ITimeZoneProvider, BrowserTimeZoneProvider>();
