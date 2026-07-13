@@ -102,7 +102,7 @@
                             @foreach (var eventGroup in dayInstances.GroupBy(i => i.EventName).OrderBy(g => g.Key))
                             {
                                 <div class="d-flex flex-wrap align-items-center gap-1">
-                                    <h6 class="mt-3">@eventGroup.Key</h6>
+                                    <h6 class="mt-3">@eventGroup.Count() x @eventGroup.Key</h6>
                                     @foreach (var item in eventGroup)
                                     {
                                         <span class="p-1 fs-5 rounded-3"
@@ -127,34 +127,67 @@
             }
         </div>
 
-        <div class="row d-flex mt-4">
+        <div class="row mt-4">
             @if (eventStatsByEventName.Any())
             {
                 @foreach (var eventName in eventStatsByEventName.Keys)
                 {
                     var currrentEventStats = eventStatsByEventName[eventName];
 
-                    <div class="col-12 col-lg-6 card">
-                        <div class="card-body">
-                            <ApexChart TItem="HistogramValues" Title="@(eventName)">
-                                @foreach (var histogram in currrentEventStats.HistogramSeries)
-                                {
-                                    <ApexPointSeries
-                                        TItem="HistogramValues"
-                                        Items="histogram.Values"
-                                        Name="@histogram.EventName"
-                                        Color="@histogram.SeriesColorHtml"
-                                        XValue="@(e => e.TimestampString)"
-                                        YValue="@(e => (decimal)e.Value)"
-                                        SeriesType="SeriesType.Bar" />
-                                }
-                            </ApexChart>
-                        </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="card">
+                            <div class="card-header">@eventName</div>
+                            
+                            <div class="card-body">
+                                <div class="card-title">Histogram (Total)</div>
+                                <ApexChart TItem="HistogramValues">
+                                    @foreach (var histogram in currrentEventStats.HistogramSeries)
+                                    {
+                                        <ApexPointSeries
+                                            TItem="HistogramValues"
+                                            Items="histogram.Values"
+                                            Name="@histogram.EventName"
+                                            Color="@histogram.SeriesColorHtml"
+                                            XValue="@(e => e.TimestampString)"
+                                            YValue="@(e => (decimal)e.Value)"
+                                            SeriesType="SeriesType.Bar" />
+                                    }
+                                </ApexChart>
+                            </div>
 
-                        <div class="card-body">
-                            <div class="card-title">Stats</div>
-                            <div class="card-text">Average events per day: @currrentEventStats.AverageEventsPerDay.ToString("0.00")</div>
-                            <div class="card-text">Total days: @currrentEventStats.TotalDays</div>
+                            <div class="card-body">
+                                <div class="card-title">Histogram (per day)</div>
+
+                                @{
+                                    var options = new ApexChartOptions<HistogramValues>(){
+                                        Yaxis = [
+                                            new()
+                                            {
+                                                DecimalsInFloat = 1
+                                            }
+                                        ]
+                                    };
+                                }
+                                <ApexChart TItem="HistogramValues" Options="@options">
+                                    @foreach (var histogram in currrentEventStats.HistogramSeries)
+                                    {
+                                        <ApexPointSeries
+                                            TItem="HistogramValues"
+                                            Items="histogram.Values"
+                                            Name="@histogram.EventName"
+                                            Color="@histogram.SeriesColorHtml"
+                                            XValue="@(e => e.TimestampString)"
+                                            YValue="@(e => (decimal)e.ValuePerDay)"
+                                            SeriesType="SeriesType.Bar" />
+                                    }
+                                </ApexChart>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title">Stats</div>
+
+                                <div class="card-text">Average events per day: @currrentEventStats.AverageEventsPerDay.ToString("0.00")</div>
+                                <div class="card-text">Total days: @currrentEventStats.TotalDays</div>
+                            </div>
                         </div>
                     </div>
                 }

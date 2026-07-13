@@ -22,7 +22,7 @@ public record HistogramSeries(
     string SeriesColorHtml,
     HistogramValues[] Values);
 
-public record HistogramValues(string TimestampString, int Value);
+public record HistogramValues(string TimestampString, int Value, decimal ValuePerDay);
 
 public partial class EventViewer
 {
@@ -216,7 +216,8 @@ public partial class EventViewer
                 var bucketsObj = buckets.Select(
                     (x, i) => new HistogramValues(
                         DecimalHoursToTimestampString(edges[i]),
-                        x)
+                        x,
+                        (decimal)x / totalDays)
                     ).ToArray();
                 currentHistograms.Add(new HistogramSeries(eventValueName, colorHtml, bucketsObj));
             }
