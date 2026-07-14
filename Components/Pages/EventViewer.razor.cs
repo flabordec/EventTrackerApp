@@ -14,7 +14,8 @@ namespace EventTrackerApp.Components.Pages;
 public record EventStats(
     List<HistogramSeries> HistogramSeries,
     int TotalDays,
-    double AverageEventsPerDay
+    double AverageEventsPerDay,
+    TimeSpan AverageTimeBetweenEvents
 );
 
 public record HistogramSeries(
@@ -178,8 +179,18 @@ public partial class EventViewer
         foreach (var instancesForCurrentEvent in instancesByEventName)
         {
             var eventName = instancesForCurrentEvent.Key;
-            var currentHistograms = new List<HistogramSeries>();
 
+            double averageMillisecondsBetweenEvents = 0.0;
+            var instancesForCurrentEventArray = instancesForCurrentEvent.OrderBy(x => x.Timestamp).ToArray();
+            for (int i = 1; i < instancesForCurrentEventArray.Length; i++)
+            {
+                var timeBetween = instancesForCurrentEventArray[i].Timestamp - instancesForCurrentEventArray[i - 1].Timestamp;
+                var millisecondsBetweenEvents = timeBetween.TotalMilliseconds;
+                averageMillisecondsBetweenEvents += (millisecondsBetweenEvents / instancesForCurrentEventArray.Length);
+            }
+            TimeSpan averageTimeBetweenEvents = TimeSpan.FromMilliseconds(averageMillisecondsBetweenEvents);
+
+            var currentHistograms = new List<HistogramSeries>();
             var instancesGroupedByDay = (
                 from x in instancesForCurrentEvent
                 let timestamp = ToClientTime(x.Timestamp)
@@ -221,7 +232,7 @@ public partial class EventViewer
                     ).ToArray();
                 currentHistograms.Add(new HistogramSeries(eventValueName, colorHtml, bucketsObj));
             }
-            results.Add(eventName, new(currentHistograms, totalDays, average));
+            results.Add(eventName, new(currentHistograms, totalDays, average, averageTimeBetweenEvents));
         }
         return results;
     }
