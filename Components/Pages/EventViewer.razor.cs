@@ -60,7 +60,7 @@ public partial class EventViewer
     public IApexChartService? ApexChartService { get; set; }
     private Dictionary<string, EventStats> eventStatsByEventName = new();
 
-    private bool showEventDates;
+    private bool showEventTimestamps;
 
     private void ToggleTimeline(DateOnly clickedDate)
     {
@@ -205,7 +205,7 @@ public partial class EventViewer
                 (string eventValueName, string colorHtml) = g.Key;
                 var timestamps = g.Select(x => TimestampToDecimal(x.Timestamp)).ToArray();
 
-                int numBuckets = 12;
+                int numBuckets = 24;
                 decimal min = 0;
                 decimal max = 24;
 

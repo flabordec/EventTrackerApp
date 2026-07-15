@@ -54,8 +54,8 @@
                 </div>
                 <div class="row mb-3">
                     <div class="form-check">
-                        <InputCheckbox class="form-check-input" id="showEventDatesCheckbox" @bind-Value="showEventDates"></InputCheckbox>
-                        <label class="form-check-label" for="showEventDatesCheckbox">Show event dates?</label>
+                        <InputCheckbox class="form-check-input" id="showEventTimestampsCheckbox" @bind-Value="showEventTimestamps"></InputCheckbox>
+                        <label class="form-check-label" for="showEventTimestampsCheckbox">Show event timestamps?</label>
                     </div>
                 </div>
             }
@@ -96,23 +96,39 @@
                         </button>
                     </div>
 
-                    <div class="d-flex flex-column gap-1">
+                    <div class="gap-1">
                         @if (instancesByDate.TryGetValue(date, out var dayInstances))
                         {
                             @foreach (var eventGroup in dayInstances.GroupBy(i => i.EventName).OrderBy(g => g.Key))
                             {
-                                <div class="d-flex flex-wrap align-items-center gap-1">
-                                    <h6 class="mt-3">@eventGroup.Count() x @eventGroup.Key</h6>
-                                    @foreach (var item in eventGroup)
-                                    {
-                                        <span class="p-1 fs-5 rounded-3"
-                                            style="@item.Style"
-                                            title="@item.EventName: @item.Details (@ToClientTime(item.Timestamp).ToString("t"))">
-                                            <i class="bi @(item.Icon)" style="font-size: 1rem"></i>
-                                            @if (showEventDates){
-                                                @ToClientTime(item.Timestamp).ToString("h:mm tt z")
-                                            } 
-                                        </span>
+                                <div class="container">
+                                    <h6 class="mt-3">@eventGroup.Count() x <i class="bi @(@eventGroup.FirstOrDefault()?.Icon)"></i> @eventGroup.Key</h6>
+                                    @if(showEventTimestamps){
+                                        @foreach (var item in eventGroup)
+                                        {
+                                            <div class="row mb-1">
+                                                <span class="p-1 fs-5 rounded-3 fs-6"
+                                                    style="@item.Style"
+                                                    title="@item.EventName: @item.Details (@ToClientTime(item.Timestamp).ToString("t"))">
+                                                    <i class="bi @(item.Icon)" style="font-size: 1rem"></i>
+                                                    @ToClientTime(item.Timestamp).ToString("h:mm tt z")
+                                                </span>
+                                            </div>
+                                        }
+                                    } else {
+                                        <div class="progress-stacked">
+                                        @foreach (var item in eventGroup)
+                                        {
+                                            double size = 100 / eventGroup.Count();
+                                            var progressBarStyle = StyleBuilder
+                                                .Default("")
+                                                .AddStyle("width", $"{size}%")
+                                                .Build();
+                                            <div class="progress" role="progressbar" style="@progressBarStyle">
+                                                <div class="progress-bar" style="@item.Style"></div>
+                                            </div>
+                                        }
+                                        </div>
                                     }
                                 </div>
                             }
@@ -134,7 +150,7 @@
                 {
                     var currrentEventStats = eventStatsByEventName[eventName];
 
-                    <div class="col-12 col-lg-6">
+                    <div class="col-12 col-lg-6 mb-3">
                         <div class="card">
                             <div class="card-header">@eventName</div>
                             
