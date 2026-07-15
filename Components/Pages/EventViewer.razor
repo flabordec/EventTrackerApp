@@ -116,14 +116,14 @@
                                             </div>
                                         }
                                     } else {
+                                        double size = 100.0 / eventGroup.Count();
+                                        var progressBarStyle = StyleBuilder
+                                            .Default("")
+                                            .AddStyle("width", $"{size}%")
+                                            .Build();
                                         <div class="progress-stacked">
                                         @foreach (var item in eventGroup)
                                         {
-                                            double size = 100 / eventGroup.Count();
-                                            var progressBarStyle = StyleBuilder
-                                                .Default("")
-                                                .AddStyle("width", $"{size}%")
-                                                .Build();
                                             <div class="progress" role="progressbar" style="@progressBarStyle">
                                                 <div class="progress-bar" style="@item.Style"></div>
                                             </div>
