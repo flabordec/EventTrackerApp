@@ -4,6 +4,8 @@ using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.Tracing;
+using EventTrackerApp.Data.Mappers;
 
 
 namespace EventTrackerApp.Components.Pages;
@@ -51,7 +53,8 @@ public partial class EventLogger
 
     private async Task LoadEvents()
     {
-        eventsList = await _dataService.GetEventsAsync(_userId);
+        var eventDtos = await _dataService.GetEventsAsync(_userId);
+        eventsList = eventDtos.Select(e => e.ToEventViewModel()).ToList();
     }
 
     private string? expandedEventName = null;
@@ -86,12 +89,7 @@ public partial class EventLogger
             }
 
             instanceDetails = instanceDetails?.Trim() ?? string.Empty;
-            var instance = new EventInstance
-            {
-                Timestamp = instanceTimestamp,
-                Details = instanceDetails.Trim(),
-                EventValueId = selectedEventValue.Id
-            };
+            var instance = new EventInstanceDto(null, instanceTimestamp, instanceDetails.Trim(), selectedEventValue.Id);
 
             await _dataService.AddInstanceAsync(instance);
 

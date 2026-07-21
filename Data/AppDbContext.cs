@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventTrackerApp.Data;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionKeyContext
+internal class AppDbContext : IdentityDbContext<ApplicationUser>, IDataProtectionKeyContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 

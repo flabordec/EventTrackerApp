@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using BlazorComponentUtilities;
-using EventTrackerApp.ViewModel;
 
 namespace EventTrackerApp.Data;
 
@@ -8,13 +7,13 @@ using System.Diagnostics;
 using System.Drawing;
 using Microsoft.AspNetCore.Identity;
 
-public class ApplicationUser : IdentityUser
+internal class ApplicationUser : IdentityUser
 {
     public ICollection<Event> Events { get; set; } = new List<Event>();
 }
 
 [DebuggerDisplay("Event: {Name}")]
-public class Event
+internal class Event
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public string? Id { get; init; }
@@ -25,17 +24,10 @@ public class Event
     public required string UserId { get; init; }
 
     public ICollection<EventValue> Values { get; set; } = new List<EventValue>();
-    internal EventViewModel ToViewModel() => new()
-    {
-        Id = Id,
-        Name = Name,
-        Image = Image,
-        Values = Values.Select(v => v.ToViewModel()).ToList()
-    };
 }
 
 [DebuggerDisplay("EventValue: {Name}")]
-public class EventValue
+internal class EventValue
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public string? Id { get; set; }
@@ -48,23 +40,10 @@ public class EventValue
     public Event? Event { get; init; }
 
     public ICollection<EventInstance> Instances { get; set; } = new List<EventInstance>();
-
-    internal EventValueViewModel ToViewModel()
-    {
-        return new EventValueViewModel
-        {
-            Id = Id,
-            Index = Index,
-            Name = Name,
-            ForegroundColor = ForegroundColor,
-            BackgroundColor = BackgroundColor,
-            Instances = Instances.Select(i => i.ToViewModel()).ToList()
-        };
-    }
 }
 
 [DebuggerDisplay("EventInstance: {Timestamp}")]
-public class EventInstance
+internal class EventInstance
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public string? Id { get; init; }
@@ -73,29 +52,4 @@ public class EventInstance
 
     public required string EventValueId { get; init; }
     public EventValue? EventValue { get; init; }
-
-    internal EventInstanceViewModel ToViewModel()
-    {
-        return new EventInstanceViewModel
-        {
-            Id = Id,
-            Timestamp = Timestamp,
-            Details = Details
-        };
-    }
 }
-
-public record CalendarInstanceKey(
-    string EventName,
-    string EventValueName,
-    DateTimeOffset Timestamp);
-
-public record CalendarInstance(
-    DateTimeOffset Timestamp,
-    string Details,
-    string EventName,
-    string ValueName,
-    string Icon,
-    string Style,
-    string ColorHtml
-);

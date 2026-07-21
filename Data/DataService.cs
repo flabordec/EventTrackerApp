@@ -1,45 +1,61 @@
-using EventTrackerApp.Data;
-using EventTrackerApp.ViewModel;
+using System.Diagnostics.CodeAnalysis;
+using EventTrackerApp.Data.Mappers;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace EventTrackerApp.Data;
 
 public interface IDataService
 {
-    Task AddEventAsync(Event newEvent);
-    Task AddInstanceAsync(EventInstance instance);
-    Task<List<EventViewModel>> GetEventsAsync(string? userId);
-    Task<List<CalendarInstance>> GetInstancesForMonthAsync(
+    Task AddEventAsync(EventDto newEvent);
+    Task AddInstanceAsync(EventInstanceDto instance);
+    Task<List<EventDto>> GetEventsAsync(string? userId);
+    Task<List<CalendarEventInstanceDto>> GetInstancesForMonthAsync(
         string? userId,
         int year,
         int month,
         TimeZoneInfo? localTimeZone);
 }
 
-public class DefaultDataService : IDataService
+internal class DefaultDataService : IDataService
 {
     private readonly AppDbContext DbContext;
+
+    [Inject]
+    [NotNull]
+    private UserManager<ApplicationUser>? UserManager { get; }
+    [Inject]
+    [NotNull]
+    private IUserStore<ApplicationUser>? UserStore { get; }
+    [Inject]
+    [NotNull]
+    private SignInManager<ApplicationUser>? SignInManager { get; }
+
+    [Inject]
+    [NotNull]
+    private Logger<DefaultDataService>? Logger { get; }
 
     public DefaultDataService(AppDbContext dbContext)
     {
         DbContext = dbContext;
     }
 
-    public async Task AddEventAsync(Event newEvent)
+    public async Task AddEventAsync(EventDto eventDto)
     {
-
-        DbContext.Events.Add(newEvent);
+        DbContext.Events.Add(eventDto.ToDatabaseEvent());
         await DbContext.SaveChangesAsync();
     }
 
-    public async Task AddInstanceAsync(EventInstance instance)
+    public async Task AddInstanceAsync(EventInstanceDto instanceDto)
     {
-        DbContext.EventInstances.Add(instance);
+        DbContext.EventInstances.Add(instanceDto.ToDatabaseInstance());
         await DbContext.SaveChangesAsync();
 
     }
 
-    public async Task<List<EventViewModel>> GetEventsAsync(string? userId)
+    public async Task<List<EventDto>> GetEventsAsync(string? userId)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -50,7 +66,7 @@ public class DefaultDataService : IDataService
             .Include(e => e.Values)
             .Where(e => e.UserId == userId)
             .AsNoTracking()
-            .Select(e => e.ToViewModel())
+            .Select(e => e.ToEventDto())
             .ToListAsync();
     }
 
@@ -60,7 +76,7 @@ public class DefaultDataService : IDataService
         return new DateTimeOffset(localTime, offset);
     }
 
-    public async Task<List<CalendarInstance>> GetInstancesForMonthAsync(
+    public async Task<List<CalendarEventInstanceDto>> GetInstancesForMonthAsync(
         string? userId,
         int year,
         int month,
@@ -92,13 +108,12 @@ public class DefaultDataService : IDataService
             let evt = val.Event!
             let localTimestamp = inst.Timestamp
             orderby localTimestamp
-            select new CalendarInstance(
+            select new CalendarEventInstanceDto(
                 localTimestamp,
-                inst.Details,
                 evt.Name,
                 val.Name,
                 evt.Image,
-                val.ToViewModel().Style,
+                val.ForegroundColor,
                 val.BackgroundColor);
 
         return query.ToList();

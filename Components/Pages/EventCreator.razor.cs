@@ -4,6 +4,7 @@ using EventTrackerApp.Data;
 using EventTrackerApp.ViewModel;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using EventTrackerApp.Data.Mappers;
 
 
 namespace EventTrackerApp.Components.Pages;
@@ -45,7 +46,8 @@ public partial class EventCreator
 
     private async Task LoadEvents()
     {
-        eventsList = await _dataService.GetEventsAsync(_userId);
+        var eventDtos = await _dataService.GetEventsAsync(_userId);
+        eventsList = eventDtos.Select(e => e.ToEventViewModel()).ToList();
     }
 
     private void AddValueToList()
@@ -78,20 +80,19 @@ public partial class EventCreator
 
         // Map ViewModel to strict domain entities
         int index = 0;
-        var newEvent = new Event
-        {
-            Name = newEventModel.Name.Trim(),
-            Image = newEventModel.Image.Trim(),
-            Values = newEventModel.Values.Select(value => new EventValue
-            {
-                Index = ++index,
-                Name = value.Name.Trim(),
-                ForegroundColor = value.ForegroundColor,
-                BackgroundColor = value.BackgroundColor,
-                EventId = "" // EF Core will automatically patch this FK upon saving the parent graph
-            }).ToList(),
-            UserId = _userId
-        };
+        var newEvent = new EventDto(
+            null, // Automatically set by EF Core
+            newEventModel.Name.Trim(),
+            newEventModel.Image.Trim(),
+            _userId,
+            newEventModel.Values.Select(value => new EventValueDto(
+                null,
+                ++index,
+                value.Name.Trim(),
+                value.ForegroundColor,
+                value.BackgroundColor
+            )).ToList()
+        );
 
         await _dataService.AddEventAsync(newEvent);
 

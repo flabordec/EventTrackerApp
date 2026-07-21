@@ -27,7 +27,7 @@ public partial class Register
 
     [SupplyParameterFromForm]
     [NotNull]
-    public InputModel? Input { get; set; }
+    public InputModel? Input { get; private set; }
 
     private IEnumerable<IdentityError> IdentityErrors = Enumerable.Empty<IdentityError>();
 

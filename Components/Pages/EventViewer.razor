@@ -102,15 +102,15 @@
                             @foreach (var eventGroup in dayInstances.GroupBy(i => i.EventName).OrderBy(g => g.Key))
                             {
                                 <div class="container">
-                                    <h6 class="mt-3">@eventGroup.Count() x <i class="bi @(@eventGroup.FirstOrDefault()?.Icon)"></i> @eventGroup.Key</h6>
+                                    <h6 class="mt-3">@eventGroup.Count() x <i class="bi @(@eventGroup.FirstOrDefault()?.Image)"></i> @eventGroup.Key</h6>
                                     @if(showEventTimestamps){
                                         @foreach (var item in eventGroup)
                                         {
                                             <div class="row mb-1">
                                                 <span class="p-1 fs-5 rounded-3 fs-6"
                                                     style="@item.Style"
-                                                    title="@item.EventName: @item.Details (@ToClientTime(item.Timestamp).ToString("t"))">
-                                                    <i class="bi @(item.Icon)" style="font-size: 1rem"></i>
+                                                    title="@item.EventName (@ToClientTime(item.Timestamp).ToString("t"))">
+                                                    <i class="bi @(item.Image)" style="font-size: 1rem"></i>
                                                     @ToClientTime(item.Timestamp).ToString("h:mm tt z")
                                                 </span>
                                             </div>
@@ -242,7 +242,7 @@
                                         {
                                             <span class="p-2 fs-5 rounded-3 d-inline-flex align-items-center justify-content-center me-3 flex-shrink-0"
                                                 style="@item.Style">
-                                                <i class="bi @(item.Icon)"></i>
+                                                <i class="bi @(item.Image)"></i>
                                             </span>
                                         }
                                     }

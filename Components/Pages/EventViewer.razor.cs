@@ -37,7 +37,7 @@ public partial class EventViewer
 
     public EventHandler<EventArgs>? selectedTimeZoneIdChanged;
     private string? selectedTimeZoneId;
-    private Dictionary<DateOnly, List<CalendarInstance>>? instancesByDate;
+    private Dictionary<DateOnly, List<CalendarEventInstanceDto>>? instancesByDate;
 
     private DateOnly? selectedDate;
 
@@ -171,7 +171,7 @@ public partial class EventViewer
     }
 
     private Dictionary<string, EventStats> CalculateHistogramsByEventName(
-        List<CalendarInstance> instancesForMonth)
+        List<CalendarEventInstanceDto> instancesForMonth)
     {
         var results = new Dictionary<string, EventStats>();
 
@@ -194,13 +194,16 @@ public partial class EventViewer
             var instancesGroupedByDay = (
                 from x in instancesForCurrentEvent
                 let timestamp = ToClientTime(x.Timestamp)
-                where timestamp.Date != DateTime.Today
                 group x by timestamp.Date
                 );
-            var average = instancesGroupedByDay.Average(x => x.Count());
-            var totalDays = instancesGroupedByDay.Count();
+            double average;
+            int totalDays;
+            average = instancesGroupedByDay.Any(x => x.Key != DateTime.Today)
+                ? instancesGroupedByDay.Where(x => x.Key != DateTime.Today).Average(x => x.Count())
+                : 0.0;
+            totalDays = instancesGroupedByDay.Count();
 
-            foreach (var g in instancesForCurrentEvent.GroupBy(x => (x.ValueName, x.ColorHtml)))
+            foreach (var g in instancesForCurrentEvent.GroupBy(x => (x.EventValueName, x.BackgroundColor)))
             {
                 (string eventValueName, string colorHtml) = g.Key;
                 var timestamps = g.Select(x => TimestampToDecimal(x.Timestamp)).ToArray();
@@ -237,14 +240,14 @@ public partial class EventViewer
         return results;
     }
 
-    private Dictionary<DateOnly, List<CalendarInstance>> GroupByDate(List<CalendarInstance> instancesForMonth)
+    private Dictionary<DateOnly, List<CalendarEventInstanceDto>> GroupByDate(List<CalendarEventInstanceDto> instancesForMonth)
     {
         var query =
             from x in instancesForMonth
             group x by DateOnly.FromDateTime(ToClientTime(x.Timestamp).Date) into g
             select g;
 
-        var instancesByDate = new Dictionary<DateOnly, List<CalendarInstance>>();
+        var instancesByDate = new Dictionary<DateOnly, List<CalendarEventInstanceDto>>();
         foreach (var group in query)
         {
             instancesByDate[group.Key] = group.ToList();
@@ -252,7 +255,7 @@ public partial class EventViewer
         return instancesByDate;
     }
 
-    private Dictionary<TimeOnly, List<CalendarInstance>>? GroupInstancesByHour(List<CalendarInstance> instances)
+    private Dictionary<TimeOnly, List<CalendarEventInstanceDto>>? GroupInstancesByHour(List<CalendarEventInstanceDto> instances)
     {
         if (instances == null)
             return null;

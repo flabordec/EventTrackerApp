@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using BlazorComponentUtilities;
+using EventTrackerApp.Data;
 
 namespace EventTrackerApp.ViewModel;
 
