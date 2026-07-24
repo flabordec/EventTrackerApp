@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using ApexCharts;
@@ -13,6 +14,7 @@ namespace EventTrackerApp.Components.Pages;
 
 public record EventStats(
     List<HistogramSeries> HistogramSeries,
+    List<InstancesSeries> InstancesSeries,
     int TotalDays,
     int TotalEvents,
     double AverageEventsPerDay,
@@ -25,6 +27,13 @@ public record HistogramSeries(
     HistogramValues[] Values);
 
 public record HistogramValues(string TimestampString, int Value, decimal ValuePerDay);
+
+public record InstancesSeries(
+    string EventName,
+    string SeriesColorHtml,
+    InstancesValues[] Values);
+
+public record InstancesValues(string DayString, int Value);
 
 public partial class EventViewer
 {
@@ -191,7 +200,7 @@ public partial class EventViewer
             }
             TimeSpan averageTimeBetweenEvents = TimeSpan.FromMilliseconds(averageMillisecondsBetweenEvents);
 
-            var currentHistograms = new List<HistogramSeries>();
+
             var instancesGroupedByDay = (
                 from x in instancesForCurrentEvent
                 let timestamp = ToClientTime(x.Timestamp)
@@ -205,6 +214,8 @@ public partial class EventViewer
             int totalEvents = instancesForCurrentEventArray.Length;
             int totalDays = instancesGroupedByDay.Count();
 
+            var currentHistograms = new List<HistogramSeries>();
+            var currentInstances = new List<InstancesSeries>();
             foreach (var g in instancesForCurrentEvent.GroupBy(x => (x.EventValueName, x.BackgroundColor)))
             {
                 (string eventValueName, string colorHtml) = g.Key;
@@ -236,9 +247,30 @@ public partial class EventViewer
                         (decimal)x / totalDays)
                     ).ToArray();
                 currentHistograms.Add(new HistogramSeries(eventValueName, colorHtml, bucketsObj));
+
+                var date = selectedDate ?? DateOnly.FromDateTime(DateTime.Now);
+                int daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
+                var instanceCountsByDayDictionary = instancesGroupedByDay.ToDictionary(
+                    x => x.Key.Day,
+                    x => x.Count(y => y.EventValueName == eventValueName));
+                var instanceValues = Enumerable
+                    .Range(1, daysInMonth)
+                    .Select(x => new InstancesValues(x.ToString(), instanceCountsByDayDictionary.GetValueOrDefault(x, 0)))
+                    .ToArray();
+                currentInstances.Add(new InstancesSeries(eventValueName, colorHtml, instanceValues));
             }
-            results.Add(eventName, new(currentHistograms, totalDays, totalEvents, averageEventsPerDay, averageTimeBetweenEvents));
+
+            results.Add(
+                eventName,
+                new(
+                    currentHistograms,
+                    currentInstances,
+                    totalDays,
+                    totalEvents,
+                    averageEventsPerDay,
+                    averageTimeBetweenEvents));
         }
+
         return results;
     }
 

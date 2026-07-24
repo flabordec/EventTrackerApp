@@ -155,16 +155,16 @@
                             <div class="card-header">@eventName</div>
                             
                             <div class="card-body">
-                                <div class="card-title">Histogram (Total)</div>
-                                <ApexChart TItem="HistogramValues">
-                                    @foreach (var histogram in currrentEventStats.HistogramSeries)
+                                <div class="card-title">Instances (per day)</div>
+                                <ApexChart TItem="InstancesValues">
+                                    @foreach (var series in currrentEventStats.InstancesSeries)
                                     {
                                         <ApexPointSeries
-                                            TItem="HistogramValues"
-                                            Items="histogram.Values"
-                                            Name="@histogram.EventName"
-                                            Color="@histogram.SeriesColorHtml"
-                                            XValue="@(e => e.TimestampString)"
+                                            TItem="InstancesValues"
+                                            Items="series.Values"
+                                            Name="@series.EventName"
+                                            Color="@series.SeriesColorHtml"
+                                            XValue="@(e => e.DayString)"
                                             YValue="@(e => (decimal)e.Value)"
                                             SeriesType="SeriesType.Bar" />
                                     }
